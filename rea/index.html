@@ -1,0 +1,2192 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light" />
+  <meta name="description" content="REA Tool Decision Guide v1.3 — интерактивный разбор Reverse Engineer Anything: что это, как работает, когда применять и нужен ли он вам." />
+  <title>REA — Tool Decision Guide v1.4</title>
+  <style>
+    :root{
+      --bg:#F5F4F1;
+      --surface:#FFFFFF;
+      --surface-2:#F0F0F3;
+      --ink:#141927;
+      --muted:#6E7080;
+      --line:#E1E2E8;
+      --accent:#5063DF;
+      --accent-soft:#E9EDFF;
+      --warn:#9E6B17;
+      --warn-soft:#FFF1D4;
+      --danger:#A83342;
+      --danger-soft:#FCE7E9;
+      --blue:#5063DF;
+      --blue-soft:#E9EDFF;
+      --shadow:0 16px 40px rgba(28,31,59,.08);
+      --radius:22px;
+      --radius-sm:14px;
+      --max:1160px;
+      --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:
+        radial-gradient(circle at 85% 8%, rgba(80,99,223,.11), transparent 24rem),
+        var(--bg);
+      color:var(--ink);
+      line-height:1.55;
+      -webkit-font-smoothing:antialiased;
+    }
+    a{color:inherit}
+    button,input{font:inherit}
+    button{cursor:pointer}
+
+    .progress{
+      position:fixed; inset:0 0 auto 0; height:3px; z-index:100;
+      background:transparent;
+    }
+    .progress > i{
+      display:block; height:100%; width:0;
+      background:var(--accent);
+      transition:width .08s linear;
+    }
+
+    .topbar{
+      position:sticky; top:0; z-index:40;
+      backdrop-filter:blur(16px);
+      background:rgba(245,245,242,.86);
+      border-bottom:1px solid rgba(220,222,217,.8);
+    }
+    .topbar-inner{
+      max-width:var(--max); margin:auto;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:12px 20px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    }
+    .brand-mark{
+      width:30px;height:30px;border-radius:9px;
+      display:grid;place-items:center;
+      background:var(--ink);color:#fff;
+      font-size:12px;
+    }
+    .reading-toggle{
+      display:flex; gap:4px; padding:4px;
+      background:var(--surface); border:1px solid var(--line); border-radius:999px;
+    }
+    .reading-toggle button{
+      border:0;background:transparent;color:var(--muted);
+      padding:7px 11px;border-radius:999px;font-size:12px;font-weight:700;
+    }
+    .reading-toggle button.active{
+      background:var(--ink);color:white;
+    }
+
+    .wrap{max-width:var(--max); margin:auto; padding:0 20px}
+    .hero{
+      padding:72px 0 48px;
+      display:grid; grid-template-columns:1.35fr .65fr; gap:36px; align-items:end;
+    }
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:8px;
+      font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+      color:var(--accent); margin-bottom:18px;
+    }
+    .eyebrow::before{
+      content:""; width:22px;height:2px;background:currentColor;border-radius:999px;
+    }
+    h1{
+      font-size:clamp(44px,7vw,88px); line-height:.94; letter-spacing:-.055em;
+      margin:0 0 24px; max-width:900px;
+    }
+    .lead{
+      font-size:clamp(18px,2.1vw,24px); line-height:1.38;
+      color:#3F4454; max-width:850px; margin:0;
+    }
+    .hero-side{
+      background:var(--ink); color:#fff; border-radius:var(--radius);
+      padding:26px; box-shadow:var(--shadow);
+    }
+    .hero-side .kicker{color:#B7BCD2;font-size:12px;text-transform:uppercase;letter-spacing:.1em;font-weight:800}
+    .hero-side strong{display:block;font-size:29px;line-height:1.05;margin:10px 0 14px}
+    .hero-side p{margin:0;color:#D5DBEC;font-size:14px}
+    .tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+    .tag{font-size:11px;font-weight:800;padding:7px 9px;border-radius:999px;background:#252B40;color:#DFE3F3}
+
+    .section{padding:72px 0;border-top:1px solid var(--line)}
+    .section.compact{padding:52px 0}
+    .section-head{
+      display:grid;grid-template-columns:.36fr .64fr;gap:28px;margin-bottom:34px;
+    }
+    .section-num{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.08em}
+    h2{font-size:clamp(30px,4.2vw,52px);line-height:1.02;letter-spacing:-.04em;margin:0}
+    h3{font-size:21px;line-height:1.15;letter-spacing:-.02em;margin:0 0 10px}
+    p{margin:0 0 14px}
+    .muted{color:var(--muted)}
+    .source-note{font-size:12px;color:var(--muted);margin-top:12px}
+    .source-badge{
+      display:inline-block;padding:4px 7px;border-radius:999px;border:1px solid var(--line);
+      font-size:10px;line-height:1;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+      background:var(--surface);vertical-align:middle
+    }
+    .source-badge.official{color:var(--accent);border-color:#C7D1FE;background:#F4F6FF}
+    .source-badge.video{color:var(--blue);border-color:#c7d7ee;background:#f4f8fd}
+    .source-badge.analysis{color:#755e22;border-color:#dfd3af;background:#fffaf0}
+
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .card{
+      background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+      padding:24px;
+    }
+    .card.soft{background:var(--surface-2)}
+    .card .label{
+      font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:var(--muted);
+      margin-bottom:10px;
+    }
+    .card .big{font-size:25px;line-height:1.1;font-weight:800;letter-spacing:-.03em}
+    .card p:last-child{margin-bottom:0}
+
+    .callout{
+      border-radius:var(--radius);
+      padding:26px 28px;
+      background:var(--accent-soft);
+      border:1px solid #D8DFFF;
+      font-size:clamp(20px,2.7vw,31px);
+      line-height:1.18;font-weight:800;letter-spacing:-.025em;
+    }
+    .callout small{display:block;margin-top:13px;color:#49558B;font-size:13px;line-height:1.5;font-weight:600;letter-spacing:0}
+
+    .pipeline{
+      display:grid;grid-template-columns:repeat(5,1fr);gap:9px;align-items:stretch;
+      margin-top:24px;
+    }
+    .pipe-step{
+      position:relative;
+      background:var(--surface);border:1px solid var(--line);
+      border-radius:18px;padding:18px;min-height:120px;
+      display:flex;flex-direction:column;justify-content:space-between;
+      transition:.2s ease;
+    }
+    .pipe-step:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+    .pipe-step:not(:last-child)::after{
+      content:"→";position:absolute;right:-15px;top:50%;transform:translateY(-50%);
+      z-index:2;width:20px;height:20px;display:grid;place-items:center;
+      border-radius:50%;background:var(--bg);color:var(--muted);font-weight:900
+    }
+    .pipe-step span{font-family:var(--mono);font-size:10px;color:var(--muted)}
+    .pipe-step b{font-size:15px;line-height:1.2}
+
+    .arch{
+      display:grid;grid-template-columns:1fr 52px 1fr 52px 1.3fr 52px 1fr;gap:10px;align-items:center;
+    }
+    .arch-arrow{text-align:center;color:#9098B5;font-size:24px;font-weight:800}
+    .arch-node{
+      width:100%;border:1px solid var(--line);background:var(--surface);
+      border-radius:18px;padding:18px;text-align:left;min-height:104px;
+      transition:.18s ease;
+    }
+    .arch-node:hover,.arch-node.active{border-color:#9BA9F0;box-shadow:0 10px 26px rgba(80,99,223,.12);transform:translateY(-2px)}
+    .arch-node .mini{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:var(--muted)}
+    .arch-node b{display:block;margin-top:8px;font-size:17px}
+    .arch-node small{display:block;color:var(--muted);margin-top:6px}
+    .arch-detail{
+      margin-top:14px;border-radius:18px;background:var(--ink);color:white;padding:22px;
+      min-height:106px;
+    }
+    .arch-detail strong{font-size:19px}
+    .arch-detail p{color:#D8DEEF;margin:8px 0 0}
+
+    .do-dont{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .good{background:var(--accent-soft);border-color:#D8DFFF}
+    .bad{background:var(--danger-soft);border-color:#eccaca}
+    .checklist{list-style:none;padding:0;margin:14px 0 0}
+    .checklist li{padding:8px 0 8px 27px;position:relative;border-top:1px solid rgba(0,0,0,.06)}
+    .checklist li:first-child{border-top:0}
+    .checklist li::before{position:absolute;left:0;font-weight:900}
+    .good .checklist li::before{content:"✓";color:var(--accent)}
+    .bad .checklist li::before{content:"×";color:var(--danger)}
+
+    .usecases{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .usecase{
+      background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;
+      min-height:214px;display:flex;flex-direction:column;
+    }
+    .usecase .icon{
+      width:38px;height:38px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;
+      font-family:var(--mono);font-size:13px;font-weight:900;margin-bottom:32px
+    }
+    .usecase p{color:var(--muted);font-size:14px}
+    .usecase .foot{margin-top:auto;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
+
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+    table{width:100%;border-collapse:collapse;min-width:760px}
+    th,td{padding:16px 18px;text-align:left;border-bottom:1px solid var(--line)}
+    th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:#fafaf8}
+    td:first-child{font-weight:750}
+    tr:last-child td{border-bottom:0}
+    .stars{font-family:var(--mono);letter-spacing:1px;color:var(--accent)}
+
+    .workflow{display:grid;gap:10px}
+    .wf{
+      display:grid;grid-template-columns:62px 1fr;gap:18px;align-items:start;
+      background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:19px;
+    }
+    .wf-num{
+      width:42px;height:42px;border-radius:12px;background:var(--ink);color:white;
+      display:grid;place-items:center;font-family:var(--mono);font-weight:800;font-size:12px
+    }
+    .wf p{margin:3px 0 0;color:var(--muted)}
+    .wf strong{font-size:17px}
+
+    .matcher{
+      display:grid;grid-template-columns:.85fr 1.15fr;gap:16px;
+    }
+    .option-list{display:grid;gap:9px}
+    .option{
+      border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:15px 16px;
+      text-align:left;font-weight:750;transition:.16s ease
+    }
+    .option:hover,.option.active{border-color:#9BA9F0;background:#F4F6FF}
+    .matcher-result{
+      background:var(--ink);color:white;border-radius:var(--radius);padding:25px;min-height:250px
+    }
+    .matcher-result .mini{color:#9EA8C2;text-transform:uppercase;font-size:11px;letter-spacing:.08em;font-weight:900}
+    .matcher-result h3{font-size:29px;margin-top:10px}
+    .matcher-result p{color:#D8DFED}
+    .stackline{
+      font-family:var(--mono);font-size:13px;background:#21273B;border:1px solid #343B54;
+      padding:13px;border-radius:12px;margin-top:16px;color:#e4eee9;overflow:auto
+    }
+
+    .decision{
+      display:grid;grid-template-columns:1fr .7fr;gap:16px;align-items:start;
+    }
+    .questions{display:grid;gap:10px}
+    .q{
+      background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:17px 18px;
+      display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;
+    }
+    .q strong{font-size:15px}
+    .yesno{display:flex;gap:5px}
+    .yesno button{
+      border:1px solid var(--line);background:#fff;padding:7px 10px;border-radius:10px;
+      font-size:12px;font-weight:800;color:var(--muted)
+    }
+    .yesno button.selected{background:var(--ink);border-color:var(--ink);color:#fff}
+    .scorebox{
+      position:sticky;top:72px;background:var(--surface);border:1px solid var(--line);
+      border-radius:var(--radius);padding:24px
+    }
+    .score{
+      font-size:64px;line-height:1;font-weight:900;letter-spacing:-.06em;margin:7px 0 13px
+    }
+    .meter{height:9px;border-radius:999px;background:#e5e7e3;overflow:hidden;margin:14px 0 20px}
+    .meter i{display:block;height:100%;width:50%;background:var(--accent);transition:.25s ease;border-radius:inherit}
+    .verdict{
+      padding:12px 14px;border-radius:12px;font-weight:800;background:var(--warn-soft);color:#74520b;
+    }
+    .reason{font-size:13px;color:var(--muted);margin-top:13px}
+
+    .rating-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .rating{
+      background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px
+    }
+    .rating-top{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:11px}
+    .rating-top b{font-size:14px}
+    .rating-top strong{font-family:var(--mono);font-size:14px}
+    .bar{height:8px;background:#e8e9e5;border-radius:999px;overflow:hidden}
+    .bar i{display:block;height:100%;background:var(--ink);border-radius:inherit}
+
+    details{
+      background:var(--surface);border:1px solid var(--line);border-radius:16px;
+      margin-bottom:9px;overflow:hidden
+    }
+    summary{
+      list-style:none;padding:18px 20px;font-weight:800;cursor:pointer;position:relative;padding-right:48px
+    }
+    summary::-webkit-details-marker{display:none}
+    summary::after{content:"+";position:absolute;right:20px;top:15px;font-size:22px;color:var(--muted)}
+    details[open] summary::after{content:"−"}
+    .detail-body{padding:0 20px 20px;color:#404643}
+    .detail-body p:last-child{margin-bottom:0}
+
+    .prompt-card{
+      background:#151716;color:#e9eeeb;border-radius:var(--radius);padding:22px;margin-bottom:12px
+    }
+    .prompt-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}
+    .prompt-head strong{font-size:15px}
+    .copy-btn{
+      border:1px solid #3c413e;background:#222522;color:#dfe6e2;border-radius:10px;
+      padding:7px 10px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em
+    }
+    pre{white-space:pre-wrap;margin:0;font:13px/1.6 var(--mono);color:#cdd9d3}
+
+    .source-list{display:grid;gap:10px}
+    .source{
+      display:grid;grid-template-columns:auto 1fr auto;gap:13px;align-items:center;
+      background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px
+    }
+    .source-index{font-family:var(--mono);font-size:11px;color:var(--muted)}
+    .source b{display:block;font-size:14px}
+    .source small{color:var(--muted)}
+    .source a{
+      text-decoration:none;border:1px solid var(--line);border-radius:10px;padding:7px 9px;font-size:11px;font-weight:800
+    }
+
+    .final{
+      padding:76px 0 88px;
+      border-top:1px solid var(--line)
+    }
+    .final-card{
+      background:var(--ink);color:white;border-radius:30px;padding:clamp(28px,6vw,62px);
+      display:grid;grid-template-columns:1.2fr .8fr;gap:32px;align-items:end
+    }
+    .final h2{font-size:clamp(37px,6vw,72px)}
+    .final p{color:#cdd4d0;font-size:17px;max-width:700px;margin-top:18px}
+    .verdict-chip{
+      border-radius:20px;background:#222623;border:1px solid #333a36;padding:22px
+    }
+    .verdict-chip .v{font-size:32px;font-weight:900;color:#B0BEFF}
+    .verdict-chip small{color:#B2B5CD}
+
+    .quick-only{display:none}
+    body.quick-mode .deep{display:none !important}
+    body.quick-mode .quick-only{display:block}
+    body.quick-mode .section{padding:48px 0}
+
+    .toast{
+      position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);
+      background:var(--ink);color:#fff;border-radius:999px;padding:10px 14px;
+      font-size:12px;font-weight:800;opacity:0;pointer-events:none;transition:.2s ease;z-index:200
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    @media (max-width:900px){
+      .hero{grid-template-columns:1fr;gap:24px;padding-top:52px}
+      .hero-side{max-width:600px}
+      .section-head{grid-template-columns:1fr;gap:10px}
+      .grid-3,.usecases{grid-template-columns:1fr 1fr}
+      .pipeline{grid-template-columns:1fr}
+      .pipe-step{min-height:0}
+      .pipe-step:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:-16px;transform:translateX(-50%)}
+      .arch{grid-template-columns:1fr}
+      .arch-arrow{transform:rotate(90deg)}
+      .matcher,.decision,.final-card{grid-template-columns:1fr}
+      .scorebox{position:static}
+    }
+    @media (max-width:640px){
+      .topbar-inner{padding:10px 14px}
+      .brand span:last-child{display:none}
+      .wrap{padding:0 14px}
+      .hero{padding:42px 0 34px}
+      h1{font-size:49px}
+      .grid-3,.grid-2,.usecases,.do-dont,.rating-grid{grid-template-columns:1fr}
+      .section{padding:56px 0}
+      .card,.usecase{padding:20px}
+      .q{grid-template-columns:1fr}
+      .yesno{width:100%}
+      .yesno button{flex:1}
+      .source{grid-template-columns:auto 1fr}
+      .source a{grid-column:2;justify-self:start}
+      .wf{grid-template-columns:48px 1fr;gap:12px}
+      .reading-toggle button{padding:6px 8px;font-size:11px}
+    }
+  
+/* ═══════════════════════════════════════════════════════════
+   TOOL DECISION GUIDE · EDITORIAL LAB / COBALT EDITION
+   Design system v1.1 · warm paper + ink navy + electric cobalt
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --bg:#F7F6F3;--surface:#FFFFFF;--surface-2:#F0F1F7;--ink:#151A2A;
+  --muted:#6C7182;--line:#E1E3EB;--accent:#5063DF;--accent-soft:#E9EDFF;
+  --blue:#5063DF;--blue-soft:#E9EDFF;
+  --shadow:0 22px 65px rgba(22,27,61,.065);
+  --radius:20px;
+  --max:1152px;
+  --nav-h:70px;
+}
+html {scroll-padding-top:calc(var(--nav-h) + 14px);}
+body {background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;}
+body::selection {background:#CAD2FF;color:#1B244B;}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #93A4FF;outline-offset:3px}
+a,button {-webkit-tap-highlight-color:transparent}
+a {text-underline-offset:3px}
+button {transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease}
+.skip-link{position:fixed;top:-80px;left:12px;z-index:300;background:var(--accent);color:#fff;padding:10px 14px;border-radius:12px}
+.skip-link:focus{top:8px}
+.progress{height:3px}.progress > i{background:var(--accent)}
+.topbar{
+  background:rgba(250,249,247,.94);
+  box-shadow:0 1px 0 #E3E4E8;
+  border-bottom:0;
+}
+.topbar-inner{height:var(--nav-h);max-width:1390px;padding:0 28px}
+.brand{text-decoration:none;letter-spacing:.075em;font-size:11px}
+.brand-mark{width:38px;height:38px;background:#161C30;color:#fff;font-size:17px;letter-spacing:-.11em;border-radius:11px;text-transform:lowercase;padding-right:3px}
+.brand-dot{color:#8C9BFF}
+.brand-edition{color:#A1A5B2}
+.header-actions{display:flex;align-items:center;gap:16px}
+.header-link{border:0;background:transparent;color:#565B6C;font-weight:800;font-size:12px;padding:10px}
+.menu-symbol{font-size:18px;vertical-align:-1px;margin-right:4px}
+.header-cta,.primary-btn,.secondary-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:16px;
+  text-decoration:none;border-radius:12px;font-weight:800;
+}
+.header-cta{background:#151A2A;color:#fff;padding:12px 16px;font-size:12px}
+.header-cta:hover{background:#343E73}
+.reading-toggle{background:#F0F1F5;border:0;border-radius:11px;padding:3px;gap:3px}
+.reading-toggle button{font-size:12px;padding:9px 12px;border-radius:9px}
+.reading-toggle button.active{background:#FFFFFF;color:#20263A;box-shadow:0 2px 7px rgba(20,25,42,.12)}
+.toc-popover{
+  position:absolute;top:calc(var(--nav-h) - 3px);right:max(24px,calc((100vw - 1390px)/2 + 28px));z-index:100;
+  width:min(440px,calc(100vw - 28px));max-height:min(680px,calc(100vh - 80px));overflow:auto;
+  padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:3px;
+  background:#FFFFFF;box-shadow:0 24px 85px rgba(24,29,56,.16);
+  border:1px solid #E2E4EB;border-radius:18px;
+}
+.toc-popover[hidden]{display:none}
+.toc-popover a{padding:12px 13px;text-decoration:none;color:#3D4356;font-size:13px;border-radius:10px;font-weight:650}
+.toc-popover a:hover{background:#F1F2FF;color:#3D4DC0}
+.side-index{display:none}
+.section-num{font-size:11px;letter-spacing:.1em;font-weight:800;color:#8E91A0}
+.section{border-color:#E8E7E9;padding:86px 0}
+.section.compact{padding:62px 0 80px}
+.section-head{grid-template-columns:210px 1fr;margin-bottom:38px;gap:24px}
+h1,h2,h3{color:var(--ink)}
+h2{font-size:clamp(32px,4.1vw,54px);letter-spacing:-.052em;max-width:800px}
+h3{letter-spacing:-.026em}
+.eyebrow{font-size:11px;letter-spacing:.12em;font-weight:900}
+.eyebrow::before{width:18px}
+.label{letter-spacing:.095em}
+.card{
+  border:1px solid #E9E9EE;background:#fff;
+  box-shadow:0 4px 14px rgba(40,42,61,.025);
+}
+.card .big{font-size:24px;line-height:1.17}
+.card p{color:#656B78}
+.card h3{font-size:21px}
+.grid-3{gap:16px}
+.grid-2{gap:16px}
+.source-badge.official{background:#EEF1FF;border-color:#D7DEFF;color:#4455C7}
+.source-badge.video{background:#F2EEFF;border-color:#DCD4FC;color:#6550A3}
+.source-badge.analysis{background:#FFF4E8;border-color:#F0DFC5;color:#95631D}
+/* Hero: first high-impact checkpoint */
+.hero-wrap{max-width:none;padding:0;background:#131827}
+.hero{
+  position:relative;isolation:isolate;overflow:hidden;
+  max-width:1378px;margin:auto;padding:94px 36px 84px;
+  display:grid;grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr);
+  gap:58px;align-items:center;
+  background:transparent;
+}
+.hero-wrap::before{
+  content:"";position:absolute;inset:var(--nav-h) 0 auto 0;pointer-events:none;
+}
+.hero-glow{
+  position:absolute;z-index:-1;pointer-events:none;top:-140px;right:-165px;width:740px;height:700px;
+  background:radial-gradient(circle,rgba(76,94,220,.3) 0%,rgba(68,66,134,.13) 42%,transparent 70%);
+}
+.hero-glow::after{
+  content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(194,205,255,.055) 1px, transparent 1px),
+                   linear-gradient(90deg,rgba(194,205,255,.055) 1px,transparent 1px);
+  background-size:32px 32px;
+  mask-image:radial-gradient(circle at 50% 50%,black,transparent 72%);
+}
+.hero-overline{display:flex;justify-content:space-between;gap:18px;color:#A1A9C9;font-size:10px;font-family:var(--mono);letter-spacing:.11em;margin-bottom:58px}
+.hero-overline-right{color:#7884A7}
+.hero-signal{display:inline-flex;align-items:center;gap:9px}
+.hero-signal i,.live-indicator i{width:6px;height:6px;display:inline-block;border-radius:100%;background:#8DA0FF;box-shadow:0 0 0 5px rgba(141,160,255,.13)}
+.hero-eyebrow{color:#A4B0FF;margin-bottom:20px}
+.hero-eyebrow::before{background:#9CADFF}
+.hero h1{font-size:clamp(52px,5.7vw,91px);color:#F9F9FF;max-width:880px;letter-spacing:-.073em;line-height:.99;margin-bottom:28px}
+.hero h1 em{font-weight:700;font-style:normal;color:#9CADFF}
+.hero .lead{font-size:clamp(19px,2vw,25px);color:#E8EAF3;max-width:650px;line-height:1.42;font-weight:430}
+.hero .lead strong{font-weight:700;color:#fff}
+.hero-support{color:#9FA9C4;font-size:15px;max-width:585px;line-height:1.65;margin:22px 0 0}
+.hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:30px}
+.primary-btn,.secondary-btn{min-height:48px;padding:14px 18px;font-size:13px}
+.primary-btn{background:#5369F0;color:white}
+.primary-btn:hover{background:#7183FF}
+.secondary-btn{border:1px solid #46506D;color:#DFE3F4}
+.secondary-btn:hover{background:#242C48}
+.hero-meta{display:flex;flex-wrap:wrap;gap:16px;margin-top:39px;color:#818BA9;font:10px/1.5 var(--mono);letter-spacing:.025em}
+.hero-meta span{white-space:nowrap}
+.hero-meta i{width:4px;height:4px;border-radius:50%;display:inline-block;background:#717DAD;margin:0 7px 2px 0}
+.hero-side{display:none}
+.hero-lab{
+  align-self:center;position:relative;padding:24px;background:linear-gradient(135deg,#202944,#181E34 70%);
+  color:white;border:1px solid #3A4365;border-radius:24px;box-shadow:0 28px 75px rgba(0,0,0,.18);
+  transform:rotate(-1deg);
+}
+.hero-lab::before{content:"";position:absolute;inset:9px -12px -11px 13px;z-index:-1;border:1px solid #3B4679;border-radius:22px;transform:rotate(3deg);background:rgba(20,26,47,.5)}
+.lab-topline,.lab-bottom{display:flex;justify-content:space-between;gap:16px;align-items:center;font:10px/1.3 var(--mono);color:#8C9CBE;letter-spacing:.08em}
+.lab-topline span:first-child{color:#C7D1F7}
+.pulse{width:7px;height:7px;display:inline-block;background:#9BAAFF;border-radius:50%;margin-right:7px;box-shadow:0 0 0 4px #4B557A}
+.lab-headline{font-size:clamp(27px,3vw,41px);font-weight:850;line-height:1.14;letter-spacing:-.052em;margin:35px 0 30px}
+.lab-headline span{color:#889BFF}
+.lab-flow{border:1px solid #3A4462;border-radius:16px;background:#151D34;padding:15px}
+.lab-flow-label{font:10px var(--mono);color:#7886AE;letter-spacing:.075em;margin-bottom:16px}
+.lab-flow-row{display:flex;align-items:center;gap:13px;background:#1B2541;border:1px solid #354064;border-radius:11px;padding:10px}
+.lab-flow-row.highlighted{background:#293866;border-color:#6377C6;box-shadow:0 0 26px rgba(86,107,225,.15)}
+.lab-icon{width:35px;height:35px;display:grid;place-items:center;background:#343F5E;border:1px solid #4C5776;border-radius:9px;color:#B7C5FF;font:11px var(--mono);flex:none}
+.lab-flow-row b{display:block;font-size:13px;font-weight:750}
+.lab-flow-row small{display:block;color:#929FC1;font-size:10px;margin-top:3px}
+.flow-state{margin-left:auto;color:#7686AD;font:9px var(--mono)}
+.flow-state.active-state{color:#A5B7FF}
+.lab-connector{height:17px;width:1px;background:#53628F;margin:0 0 0 33px;position:relative}
+.lab-connector::after{content:"↓";position:absolute;left:-4px;bottom:-5px;color:#7183B4;font-size:11px}
+.lab-bottom{margin-top:18px;font-size:9px;color:#7586A8}
+/* 30 seconds */
+#tldr{background:#F7F6F3}
+#tldr .grid-3 .card{padding:28px;min-height:233px;border-radius:18px}
+#tldr .grid-3 .card::before{content:"";display:block;width:32px;height:4px;background:#5667DF;border-radius:50px;margin-bottom:22px}
+#tldr .grid-3 .card:nth-child(2)::before{background:#9C9FF2}
+#tldr .grid-3 .card:nth-child(3)::before{background:#BCC4E8}
+#tldr .card .label{color:#8A8E9C}
+#tldr .callout{margin-top:20px;background:#EAEDEFF0;border:0;color:#252B44;position:relative;overflow:hidden}
+#tldr .callout::before{content:'“';position:absolute;right:28px;top:-68px;font:200px Georgia,serif;color:rgba(70,85,160,.07)}
+#problem{background:#FFFFFF}
+#problem .card.good{background:#EFF1FF;border-color:#D9DFFB}
+#problem .card.bad{background:#FBEEF0;border-color:#F2DCDF}
+#what{background:#F7F6F3}
+#what .card{padding:30px}
+#what .card .label{color:var(--accent)}
+/* Architecture: second control checkpoint */
+#architecture{
+  background:#171C2D;color:#E6EAFB;
+  padding:100px 0;
+  border:0;position:relative;overflow:hidden
+}
+#architecture::before{
+  content:"";position:absolute;right:-200px;top:-150px;width:700px;height:600px;pointer-events:none;
+  background:radial-gradient(ellipse,rgba(85,95,191,.23),transparent 64%)
+}
+#architecture .section-num{color:#929CC3}
+#architecture h2{color:#F4F5FB;max-width:780px}
+#architecture .section-head{margin-bottom:30px}
+.architecture-intro{display:flex;justify-content:space-between;gap:30px;align-items:end;margin-bottom:35px}
+.arch-editorial{max-width:680px}
+.arch-editorial p{font-size:17px;color:#B9C2DD;line-height:1.6;margin:12px 0 0}
+.arch-editorial strong{color:#F2F4FF}
+.micro-tag{font:10px var(--mono);font-weight:800;letter-spacing:.09em;color:#A1AEFF}
+.arch-stamp{font:11px var(--mono);color:#8A92B1;white-space:nowrap}
+.arch{grid-template-columns:1fr 25px 1fr 25px 1fr 25px 1fr;gap:7px}
+.arch-arrow{color:#818EC6;opacity:.8;font-size:22px;pointer-events:none}
+.arch-node{
+  background:#212943;color:#DCE4FF;border:1px solid #465271;border-radius:16px;
+  min-height:152px;padding:19px;text-align:left;
+  display:flex;flex-direction:column;align-items:flex-start
+}
+.arch-node .mini{color:#8292BF;font:10px var(--mono)}
+.arch-node b{font-size:17px;line-height:1.25;margin-top:22px;color:#F5F6FF}
+.arch-node small{color:#A5AFCF;font-size:11px;margin-top:7px;line-height:1.4}
+.arch-node:hover,.arch-node.active{
+  background:#324273;border-color:#8E9FF2;box-shadow:0 18px 30px rgba(5,10,32,.24);
+  transform:translateY(-3px)
+}
+.arch-node.active .mini,.arch-node.active small{color:#BCC7FF}
+.arch-detail{
+  margin-top:19px;min-height:180px;background:#292F4A;border:1px solid #465373;
+  padding:31px;border-radius:20px;display:flex;flex-direction:column;justify-content:center;
+  transition:background .2s ease
+}
+.arch-detail strong{font-size:25px;letter-spacing:-.035em;color:#FFF}
+.arch-detail p{color:#C0CAE7;font-size:15px;max-width:780px}
+.detail-prefix{font:10px var(--mono);color:#A5B2FF;letter-spacing:.075em;margin-bottom:12px}
+.provider-line{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px}
+.provider-line span{font:10px var(--mono);color:#8794B9;letter-spacing:.08em;margin-right:4px}
+.provider-line b{font-size:11px;color:#BFC9E6;font-weight:700;padding:7px 12px;border-radius:999px;border:1px solid #4B5572;background:#242B42}
+#architecture details{background:#222A43;border:1px solid #444F70;color:#EAEFFF}
+#architecture summary{color:#E6EAFB}
+#architecture summary::after{color:#A5B2FF}
+#architecture .detail-body{color:#BFC7E0}
+#myth{background:#FFFFFF}
+#myth .good{background:#EFF1FF;border-color:#D6DDFB}
+#myth .bad{background:#FCECEE;border-color:#F3D7DC}
+.good .checklist li::before{color:#4A5EE0}
+#cases{background:#F7F6F3}
+.case-pair .card{padding:31px;min-height:340px;position:relative;overflow:hidden}
+.case-pair .card:nth-child(1){background:#F1F2FC}
+.case-pair .card:nth-child(2){background:#EFEFF7}
+.case-counter{font:50px/1 var(--mono);color:#5465C8;margin:0 0 37px;letter-spacing:-.08em}
+.case-counter span{font:10px/1 var(--mono);letter-spacing:.08em;color:#818BAF;margin-left:7px}
+.case-pair .card h3{font-size:30px}
+#where{background:#FFFFFF}
+#where .usecase{border-radius:16px}
+#where .usecase .icon{background:#EAEDFC;color:#5665BE}
+#where .usecase .foot{color:#5567DC}
+#notneeded{background:#F7F6F3}
+#compare{background:#FFFFFF}
+#matcher{background:#F4F4F9}
+.option{border-radius:12px;padding:17px}
+.option:hover,.option.active{border-color:#B6BFFF;background:#F2F4FF}
+.matcher-result{background:#171C2D}
+.matcher-result .stackline{background:#252D4B;border-color:#3B4771}
+#workflow{background:#FFFFFF}
+.wf{border:1px solid #E6E7EC;padding:22px;border-radius:18px}
+.wf-num{background:#222846;border-radius:11px}
+/* Decision: third control checkpoint */
+#decision{
+  background:radial-gradient(circle at 4% 4%,rgba(92,113,230,.10),transparent 35%),#F0F1F8;
+  padding-top:100px;padding-bottom:100px;
+}
+#decision .section-head{margin-bottom:20px}
+.decision-caption{display:flex;justify-content:space-between;align-items:center;gap:22px;margin:0 0 29px;font-size:13px;color:#74788C}
+.decision{grid-template-columns:minmax(0,1fr) minmax(300px,.73fr);gap:24px}
+.questions{gap:10px}
+.q{padding:19px 19px 19px 24px;border:1px solid #E1E3EF;border-radius:16px;min-height:88px;box-shadow:0 5px 12px rgba(23,28,59,.025)}
+.q strong{font-size:15px;line-height:1.35;color:#222943;max-width:390px}
+.yesno{flex-shrink:0}
+.yesno button{
+  background:#F1F2F7;border:1px solid #E6E7EF;color:#697085;
+  border-radius:9px;min-width:49px;padding:10px
+}
+.yesno button:hover{border-color:#B6BFFF;background:#EAEDFE}
+.yesno button.selected{background:#5165E2;border-color:#5165E2;color:#fff;box-shadow:0 3px 8px rgba(74,93,206,.24)}
+.scorebox{
+  top:calc(var(--nav-h) + 18px);padding:29px;border-radius:23px;
+  background:#FFFFFF;border:1px solid #DDE1EF;
+  box-shadow:0 28px 60px rgba(41,49,92,.085);
+}
+.scorebox-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:22px}
+.scorebox .label{color:#81879C;font-size:10px;margin:0}
+.live-indicator{font:9px var(--mono);color:#6773C4;white-space:nowrap}
+.live-indicator i{width:5px;height:5px;margin:0 7px 1px 0;background:#7F90F4;box-shadow:0 0 0 4px #EBEDFF}
+.score-dial{
+  width:min(248px,100%);aspect-ratio:1;margin:0 auto 23px;border-radius:50%;
+  padding:14px;background:conic-gradient(#5369E6 0deg,#5369E6 var(--score-angle,180deg),#ECEDF6 var(--score-angle,180deg),#ECEDF6 360deg);
+  display:grid;place-items:center
+}
+.score-dial-inner{
+  background:#FFFFFF;width:100%;height:100%;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.score{font-size:69px;margin:0;color:#1F2640;letter-spacing:-.085em}
+.score small{font-size:23px;letter-spacing:0;color:#8189AC}
+.score-dial-inner>span{font-size:11px;color:#9297AC;font-weight:700}
+.completion-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#8B90A3;margin-bottom:8px}
+.completion-row b{font:11px var(--mono);color:#343C57}
+.scorebox .meter{margin:0 0 18px;background:#E9EBF4;height:5px}
+.scorebox .meter i{background:#6375E6}
+.scorebox .verdict{border-radius:12px;font-size:14px;padding:14px;background:#FFF1D4;color:#74520B}
+.scorebox .reason{font-size:12px;line-height:1.6;margin:13px 0 18px}
+.reset-btn{width:100%;border:1px solid #E1E3EA;background:#fff;color:#747B8F;border-radius:11px;padding:11px;font-size:11px;font-weight:800}
+.reset-btn:hover{background:#F4F5FC;color:#4C5ECB;border-color:#C1C9FB}
+#rating{background:#FFFFFF}
+#risks{background:#F7F6F3}
+#prompts{background:#FFFFFF}
+.prompt-card{background:#171C2D;border-radius:20px}
+.prompt-card .copy-btn{background:#2A355A;border-color:#414D78}
+.prompt-card .copy-btn:hover{background:#4557A1}
+#setup{background:#F2F3FA}
+#sources{background:#FFFFFF}
+#verdict-final{background:#F7F6F3}
+.final-card{background:#171C2D}
+.final h2{color:#FFFFFF}
+.final-card .eyebrow{color:#9AA9FF!important}
+.verdict-chip{background:#262E4D;border-color:#3A4773}
+.verdict-chip .v{color:#ACB8FF}
+.verdict-chip .label{color:#A7AECF!important}
+.verdict-chip small{color:#C9D0E4}
+/* fine-grain typography and interactions */
+.card,.usecase,details,.wf{transition:transform .2s ease,box-shadow .2s ease}
+.card:hover,.usecase:hover{box-shadow:0 12px 32px rgba(28,35,75,.07)}
+.section p{line-height:1.67}
+.source a{background:#F4F5FC;color:#4858B9;border:1px solid #E5E8FA}
+.source a:hover{background:#E9EDFF}
+.toast{background:#171C2D}
+@media(min-width:1540px){
+ .side-index{
+  display:flex;position:fixed;z-index:12;top:calc(var(--nav-h) + 100px);
+  left:max(24px,calc((100vw - 1530px)/2));width:145px;
+  flex-direction:column;gap:5px;padding-left:15px;border-left:1px solid #CBD1E8;
+ }
+ .side-label{font:10px var(--mono);letter-spacing:.07em;color:#979AAD;margin-bottom:15px}
+ .side-index a{font-size:12px;color:#7C8296;padding:6px 0;text-decoration:none;font-weight:700}
+ .side-index a:hover,.side-index a.current{color:#4A5EDB}
+ .side-footer{font:10px/1.7 var(--mono);color:#A2A6B4;margin-top:24px}
+}
+@media(max-width:1120px){
+ .hero{grid-template-columns:1.08fr .92fr;gap:26px;padding:75px 24px 66px}
+ .hero h1{font-size:clamp(50px,6vw,70px)}
+ .hero-lab{padding:19px;transform:none}
+ .lab-headline{font-size:27px}
+ .lab-bottom span:last-child{display:none}
+ .arch{gap:4px;grid-template-columns:1fr 17px 1fr 17px 1fr 17px 1fr}
+ .arch-node{padding:13px;min-height:156px}
+ .arch-node b{font-size:15px}
+ .arch-arrow{font-size:18px}
+}
+@media(max-width:900px){
+ :root{--nav-h:62px}
+ .topbar-inner{padding:0 18px}
+ .hero{grid-template-columns:1fr;padding:64px 25px 50px;gap:34px}
+ .hero-overline{margin-bottom:32px}
+ .hero .lead{max-width:760px}
+ .hero-support{max-width:700px}
+ .hero-lab{max-width:680px;margin:auto;width:100%}
+ .section-head{grid-template-columns:1fr;gap:12px}
+ .section{padding:65px 0}
+ #architecture{padding:70px 0}
+ .arch{grid-template-columns:1fr;gap:5px}
+ .arch-arrow{transform:rotate(90deg);font-size:20px;line-height:1}
+ .arch-node{min-height:0;padding:18px 20px}
+ .arch-node b{margin-top:9px}
+ .arch-detail{margin-top:13px}
+ .decision{grid-template-columns:1fr;gap:20px}
+ .scorebox{position:static;max-width:none}
+ .score-dial{width:180px}
+ .score{font-size:52px}
+ .score small{font-size:18px}
+ .rating-grid{grid-template-columns:repeat(2,1fr)}
+ .final-card{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+ :root{--nav-h:59px}
+ .topbar-inner{padding:0 14px}
+ .brand-mark{width:34px;height:34px}
+ .header-actions{gap:4px}
+ .header-cta{display:none}
+ .header-link{font-size:11px;padding:7px}
+ .reading-toggle button{font-size:11px;padding:8px 9px}
+ .hero{padding:51px 17px 48px}
+ .hero-overline-right{display:none}
+ .hero h1{font-size:clamp(48px,12vw,69px);letter-spacing:-.069em;margin-bottom:21px}
+ .hero .lead{font-size:18px}
+ .hero-support{font-size:14px}
+ .hero-actions{flex-direction:column;align-items:stretch}
+ .hero-actions a{justify-content:space-between;width:100%;text-align:left}
+ .hero-meta{gap:8px 14px;margin-top:25px}
+ .hero-meta span{font-size:8px}
+ .hero-lab{padding:17px}
+ .lab-headline{font-size:27px;margin:24px 0}
+ .lab-topline,.lab-bottom{font-size:8px}
+ .lab-topline span:last-child{font-size:8px}
+ .lab-flow-row b{font-size:12px}
+ .lab-flow-row small{font-size:10px}
+ .flow-state{font-size:8px}
+ .section{padding:56px 0}
+ .section.compact{padding:50px 0 54px}
+ .section-head{margin-bottom:27px}
+ .section-num{font-size:10px}
+ h2{font-size:clamp(31px,8.2vw,41px)}
+ .card .big{font-size:22px}
+ #tldr .grid-3 .card{min-height:0;padding:23px}
+ .grid-3,.grid-2,.usecases,.do-dont,.rating-grid{grid-template-columns:1fr}
+ #tldr .callout{font-size:21px;padding:23px}
+ #architecture{padding:64px 0}
+ .architecture-intro{align-items:start}
+ .arch-editorial p{font-size:15px}
+ .arch-stamp{display:none}
+ .arch-detail{padding:22px;min-height:180px}
+ .arch-detail strong{font-size:22px}
+ .provider-line{gap:7px}
+ .provider-line span{width:100%}
+ .provider-line b{font-size:10px}
+ .case-pair .card{padding:23px;min-height:0}
+ .case-counter{font-size:42px;margin-bottom:22px}
+ .case-pair .card h3{font-size:26px}
+ #decision{padding:61px 0}
+ .decision-caption{display:block}
+ .decision-caption span:last-child{display:block;margin-top:9px;font-size:12px}
+ .q{grid-template-columns:1fr;padding:17px;gap:13px;min-height:0}
+ .q strong{font-size:15px}
+ .yesno button{padding:10px}
+ .scorebox{padding:23px}
+ .score-dial{width:202px}
+ .score{font-size:59px}
+ .source{padding:14px}
+ .prompt-card{padding:18px}
+ pre{font-size:12px}
+ .final{padding:55px 0}
+ .final-card{padding:27px;border-radius:24px}
+}
+@media(max-width:380px){.section-head{grid-template-columns:minmax(0,1fr)}.section-head h2{overflow-wrap:anywhere;hyphens:auto}}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   TOOL DECISION GUIDE · STUDIO CONTRAST / CLICKSTART-INSPIRED
+   Palette sampled from user's reference image IMG_5364.jpeg
+   black #161616 / electric #2C65F2 / lime #D9F64D / white #FFFFFF
+   ═══════════════════════════════════════════════════════════ */
+:root{
+ --bg:#F8F8F6;--surface:#FFFFFF;--surface-2:#F2F4F5;
+ --ink:#161616;--muted:#65686C;--line:#E1E2E3;
+ --accent:#2C65F2;--accent-soft:#EBF1FF;
+ --lime:#D9F64D;--lime-soft:#F2FBD0;
+ --blue:#2C65F2;--blue-soft:#EBF1FF;
+ --shadow:0 22px 65px rgba(20,20,20,.065);
+}
+body{background:var(--bg);color:var(--ink)}
+body::selection{background:var(--lime);color:#161616}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline-color:#2C65F2}
+.skip-link{background:var(--lime);color:#161616}
+.progress>i{background:var(--lime)}
+.topbar{background:rgba(252,252,250,.96);box-shadow:0 1px 0 #E4E5E4}
+.brand-mark{background:#161616;color:#FFFFFF}
+.brand-dot{color:var(--lime)}
+.brand-edition{color:#7C7F83}
+.header-link{color:#55585D}
+.header-cta{background:var(--blue);color:#FFFFFF}
+.header-cta:hover{background:#174DD2}
+.reading-toggle{background:#EEEFF1}
+.reading-toggle button.active{color:#151515}
+.toc-popover{border-color:#E0E2E3;box-shadow:0 24px 85px rgba(19,19,19,.15)}
+.toc-popover a:hover{background:var(--blue-soft);color:#174ECD}
+.section-num{color:#7D8389}
+.side-index{border-left-color:#D1D4D5}
+.side-index a.current,.side-index a:hover{color:#2058DA}
+/* Dark editorial hero: lime typography accent, royal blue investigation panel */
+.hero-wrap{background:#161616}
+.hero-glow{
+ background:radial-gradient(circle,rgba(44,101,242,.17) 0%,rgba(44,101,242,.06) 42%,transparent 70%);
+}
+.hero-glow::after{
+ background-image:linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+ linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);
+}
+.hero-overline{color:#A9AEB7}
+.hero-overline-right{color:#828991}
+.hero-signal i,.live-indicator i{background:var(--lime);box-shadow:0 0 0 5px rgba(217,246,77,.16)}
+.hero-eyebrow{color:var(--lime)}
+.hero-eyebrow::before{background:var(--lime)}
+.hero h1{color:#FFFFFF}
+.hero h1 em{color:var(--lime)}
+.hero .lead{color:#E8E8E8}
+.hero-support{color:#BCC0C5}
+.primary-btn{background:var(--lime);color:#161616}
+.primary-btn:hover{background:#E5FD84;color:#161616;transform:translateY(-2px)}
+.secondary-btn{border-color:#777B80;color:#FFFFFF}
+.secondary-btn:hover{background:#2A2A2A}
+.hero-meta{color:#AAAEB3}
+.hero-meta i{background:var(--lime)}
+.hero-lab{
+ background:var(--blue);border-color:#4276FA;color:#FFFFFF;
+ box-shadow:0 28px 75px rgba(0,0,0,.23);
+}
+.hero-lab::before{border-color:rgba(217,246,77,.48);background:rgba(28,57,148,.48)}
+.lab-topline,.lab-bottom{color:#D8E5FF}
+.lab-topline span:first-child{color:#FFFFFF}
+.pulse{background:var(--lime);box-shadow:0 0 0 4px rgba(217,246,77,.22)}
+.lab-headline{color:#FFFFFF}
+.lab-headline span{color:var(--lime)}
+.lab-flow{background:#1C4FC7;border-color:#8CACFC}
+.lab-flow-label{color:#E0E9FF}
+.lab-flow-row{background:#143C9F;border-color:#4A7BEB;color:#FFFFFF}
+.lab-flow-row small{color:#CADCFF}
+.lab-flow-row .flow-state{color:#CEDDFF}
+.lab-icon{background:#FFFFFF;border-color:#FFFFFF;color:#164FBF}
+.lab-connector{background:#B5CDFF}
+.lab-connector::after{color:#CFE0FF}
+.lab-flow-row.highlighted{
+ background:var(--lime);border-color:var(--lime);box-shadow:0 8px 24px rgba(9,22,44,.16);color:#161616;
+}
+.lab-flow-row.highlighted b{color:#161616}
+.lab-flow-row.highlighted small,.lab-flow-row.highlighted .flow-state{color:#444F17}
+.lab-flow-row.highlighted .lab-icon{background:#161616;border-color:#161616;color:var(--lime)}
+/* Light / high energy editorial surfaces */
+#tldr{background:#F8F8F6}
+#tldr .grid-3 .card{border-color:#E7E7E7}
+#tldr .grid-3 .card:nth-child(1){background:#FFFFFF}
+#tldr .grid-3 .card:nth-child(2){background:var(--blue);border-color:var(--blue);color:#FFFFFF}
+#tldr .grid-3 .card:nth-child(3){background:var(--lime);border-color:var(--lime);color:#161616}
+#tldr .grid-3 .card:nth-child(2) .label,#tldr .grid-3 .card:nth-child(2) .muted{color:#E1EAFF}
+#tldr .grid-3 .card:nth-child(3) .label,#tldr .grid-3 .card:nth-child(3) .muted{color:#30362A}
+#tldr .grid-3 .card:nth-child(1)::before{background:var(--blue)}
+#tldr .grid-3 .card:nth-child(2)::before{background:var(--lime)}
+#tldr .grid-3 .card:nth-child(3)::before{background:#161616}
+#tldr .callout{background:#F0F1EF;color:#161616}
+#tldr .callout::before{color:rgba(44,101,242,.07)}
+.callout small{color:#42494E}
+.source-badge.official{background:#EEF3FF;border-color:#CAD8FD;color:#2058D6}
+.source-badge.video{background:#F0F1F9;border-color:#DADDF1;color:#364A9A}
+#problem .card.good,#myth .good{background:var(--lime-soft);border-color:#E0EBA7}
+.good .checklist li::before{color:#232813}
+#what{background:#F8F8F6}
+#what .card .label{color:#1E57D7}
+/* Architecture — dark canvas, bright blue/acid focal state */
+#architecture{background:#161616;color:#FFFFFF}
+#architecture::before{background:radial-gradient(ellipse,rgba(44,101,242,.22),transparent 67%)}
+#architecture .section-num{color:#A0A3A3}
+#architecture h2{color:#FFFFFF}
+.arch-editorial p{color:#C2C6CA}
+.arch-editorial strong{color:#FFFFFF}
+.micro-tag{color:var(--lime)}
+.arch-stamp{color:#A3A6A6}
+.arch-node{background:#242424;color:#FFFFFF;border-color:#464646}
+.arch-node .mini{color:#A7B3D0}
+.arch-node b{color:#FFFFFF}
+.arch-node small{color:#B9C0CA}
+.arch-arrow{color:var(--lime)}
+.arch-node:hover,.arch-node.active{background:var(--blue);border-color:#A8BEFA;box-shadow:0 14px 26px rgba(0,0,0,.28)}
+.arch-node.active .mini,.arch-node.active small{color:#E0E9FF}
+.arch-detail{background:#282828;border-color:#4B4B4B}
+.arch-detail strong{color:#FFFFFF}
+.arch-detail p{color:#CED0D1}
+.detail-prefix{color:var(--lime)}
+.provider-line span{color:#A8AFB6}
+.provider-line b{background:#313131;border-color:#555555;color:#F1F1F1}
+#architecture details{background:#242424;border-color:#484848}
+#architecture summary{color:#FFFFFF}
+#architecture summary::after{color:var(--lime)}
+#architecture .detail-body{color:#CFD0D1}
+#cases{background:#F8F8F6}
+.case-pair .card:nth-child(1){background:#EBF1FF}
+.case-pair .card:nth-child(2){background:#F2FBD0}
+.case-counter{color:var(--blue)}
+.case-pair .card:nth-child(2) .case-counter{color:#20241A}
+#where{background:#FFFFFF}
+#where .usecase .icon{background:var(--lime);color:#161616}
+#where .usecase:nth-child(even) .icon{background:var(--blue);color:#FFFFFF}
+#where .usecase .foot{color:#2156CB}
+#notneeded,#risks{background:#F8F8F6}
+#compare{background:#FFFFFF}
+.stars{color:var(--blue)}
+#matcher{background:#F0F1F2}
+.option:hover,.option.active{border-color:#8AB0F8;background:#EBF1FF}
+.matcher-result{background:#161616;color:#FFFFFF}
+.matcher-result .mini{color:#D5E1FE}
+.matcher-result p{color:#D6D6D6}
+.matcher-result .stackline{background:#242424;border-color:#414141;color:var(--lime)}
+#workflow{background:#FFFFFF}
+.wf-num{background:var(--blue)}
+/* Decision: white form, blue progress, lime as strongly positive result */
+#decision{background:#F0F3F7}
+.decision-caption{color:#626A75}
+.q{border-color:#DFE4EA}
+.q strong{color:#171717}
+.yesno button{background:#F2F3F5;border-color:#E1E4E8;color:#555B62}
+.yesno button:hover{border-color:#A5BDF6;background:#EAF0FF}
+.yesno button.selected{background:var(--blue);border-color:var(--blue);color:white;box-shadow:0 4px 10px rgba(44,101,242,.24)}
+.scorebox{border-color:#DCE1EA;box-shadow:0 22px 54px rgba(22,22,22,.075)}
+.live-indicator{color:#2156CF}
+.live-indicator i{background:var(--lime);box-shadow:0 0 0 4px #F3FBD8}
+.score-dial{background:conic-gradient(var(--blue) 0deg,var(--blue) var(--score-angle,180deg),#E8EBF1 var(--score-angle,180deg),#E8EBF1 360deg)}
+.score{color:#161616}
+.scorebox .meter i{background:var(--blue)}
+.reset-btn:hover{color:#1E55D2;border-color:#AABCF0;background:#EDF2FF}
+#rating{background:#FFFFFF}
+.bar i{background:var(--blue)}
+#prompts{background:#FFFFFF}
+.prompt-card{background:#161616}
+.prompt-card .copy-btn{background:var(--lime);border-color:var(--lime);color:#161616}
+.prompt-card .copy-btn:hover{background:#E9FD8A}
+#setup{background:#F3F4F5}
+#sources{background:#FFFFFF}
+.source a{background:#EDF2FF;color:#2056CF;border-color:#DCE5FF}
+.source a:hover{background:#DBE5FF}
+#verdict-final{background:#F8F8F6}
+.final-card{background:#161616}
+.final-card .eyebrow{color:var(--lime)!important}
+.verdict-chip{background:var(--blue);border-color:var(--blue)}
+.verdict-chip .v{color:var(--lime)}
+.verdict-chip .label{color:#DBE5FF!important}
+.verdict-chip small{color:#ECF1FF}
+.toast{background:#161616}
+@media(max-width:650px){
+ .hero-lab{transform:none}
+ .hero h1 em{color:var(--lime)}
+}
+
+
+/* === REA Guide v1.4: targeted user-testing improvements === */
+.matcher-result h3#matchTitle{color:#FFFFFF!important;text-shadow:none}
+.matcher-result .mini{color:#D9F64D}
+.term-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:18px}
+.term-strip>div{padding:15px;background:#232323;border:1px solid #464646;border-radius:13px}
+.term-strip b{display:block;color:#D9F64D;font-size:13px;margin-bottom:7px}
+.term-strip span{display:block;color:#D5D7D8;font-size:12px;line-height:1.4}
+.form-lab{margin-top:22px;background:#161616;color:#fff;border-radius:25px;padding:clamp(19px,3.5vw,34px)}
+.form-lab-heading{display:flex;justify-content:space-between;align-items:start;gap:30px;margin-bottom:25px}
+.form-lab-heading h3{font-size:clamp(25px,3vw,34px);line-height:1.1;color:#fff;margin:10px 0 10px}
+.form-lab-heading p{color:#C4CBD4;max-width:680px;font-size:14px}
+.form-lab-heading p strong{color:#fff}
+.lab-safe{font:10px/1.5 var(--mono);white-space:nowrap;border:1px solid #646C78;color:#AEBFDA;padding:8px 10px;border-radius:999px}
+.form-demo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.demo-column{border-radius:18px;background:#262626;border:1px solid #464646;overflow:hidden}
+.demo-column-active{background:#2C65F2;border-color:#6187F7}
+.demo-minihead{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.2);padding:14px 19px;font-size:11px;letter-spacing:.02em;color:#E4ECFF}
+.demo-minihead b{font:9px/1.25 var(--mono);color:#D9F64D}
+.static-form,.step-demo{padding:21px;min-height:340px}
+.static-form label,.step-question label{display:block;font-size:15px;font-weight:800;margin-bottom:8px;color:#fff}
+.static-form input,.static-form select,.step-question input,.step-question select{
+ width:100%;max-width:100%;min-height:43px;background:#fff;border:2px solid transparent;border-radius:10px;color:#161616;padding:10px 12px;font-size:14px;margin:0 0 14px
+}
+.static-form input:focus,.static-form select:focus,.step-question input:focus,.step-question select:focus{outline:2px solid #D9F64D;outline-offset:2px}
+.demo-action{padding:12px 17px;background:#D9F64D;color:#151515;border:0;border-radius:11px;font-weight:900;font-size:13px}
+.demo-action:hover{background:#EDFF9B}
+.demo-feedback{font-size:12px;line-height:1.4;color:#AEB6C0;margin-top:13px;min-height:29px}
+.step-progress{margin:0 0 34px;font:11px var(--mono);color:#F4F7FF}
+.step-track{margin-top:9px;background:rgba(255,255,255,.28);height:5px;border-radius:8px;overflow:hidden}
+.step-track i{display:block;background:#D9F64D;height:100%;width:33.333%;transition:width .25s ease}
+.step-question{min-height:138px}
+.step-question>span{font:10px var(--mono);color:#DFE8FF}
+.step-question label{font-size:22px;letter-spacing:-.03em;margin:7px 0 4px}
+.step-question p{font-size:12px;color:#D9E5FF;margin:0 0 14px}
+.step-error{min-height:20px;margin:0 0 9px;color:#FFF8BA;font-size:12px;font-weight:800}
+.step-controls{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.demo-back{border:1px solid rgba(255,255,255,.5);border-radius:11px;padding:11px 16px;color:#fff;background:transparent;font-size:13px;font-weight:800}
+.demo-back:disabled{opacity:.35;cursor:not-allowed}
+.step-keyboard{font-size:10px;color:#E4EDFF;margin-top:18px}
+.step-done{text-align:center;padding:4px 8px 0;min-height:138px}
+.step-done>span{display:inline-grid;place-items:center;width:39px;height:39px;border-radius:50%;background:#D9F64D;color:#161616;font-weight:900}
+.step-done h4{font-size:20px;margin:9px 0 5px}
+.step-done p{font-size:12px;color:#DCE6FF;margin:0}
+.research-steps{margin-top:18px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.research-steps span{border:1px solid #555;background:#252525;border-radius:11px;font-size:11px;line-height:1.45;color:#E2E3E2;padding:12px}
+.research-steps b{display:block;color:#D9F64D;margin-bottom:5px}
+.compare-table{min-width:660px}
+.compare-table td{font-size:13px;line-height:1.5;vertical-align:top}
+.compare-table td strong{color:#174FC9}
+.compare-table td:first-child{min-width:150px}
+.qualitative-grid .rating{padding:22px}
+.qualitative-grid .rating h3{font-size:19px;margin:13px 0 8px}
+.qualitative-grid .rating p{font-size:13px;color:#63666B;margin:0}
+.rating-chip{display:inline-block;font-size:10px;letter-spacing:.04em;text-transform:uppercase;font-weight:900;padding:6px 9px;border-radius:999px;background:#ECEFF8;color:#344B81}
+.rating-chip.strong{background:#D9F64D;color:#161616}
+.rating-chip.low{background:#F5E6E6;color:#863636}
+/* Decision becomes text-first rather than pseudo-precise score */
+.decision-symbol{width:116px;height:116px;border-radius:24px;margin:0 auto 22px;background:#EDF0F5;color:#1D2434;display:grid;place-items:center;font-size:75px;font-weight:900;line-height:1}
+#decisionResult[data-state="yes"] .decision-symbol{background:#D9F64D;color:#161616}
+#decisionResult[data-state="yes"] .verdict{background:#D9F64D;color:#161616}
+#decisionResult[data-state="no"] .decision-symbol{background:#F6DFDF;color:#8E2E2E}
+#decisionResult[data-state="no"] .verdict{background:#F6DFDF;color:#8E2E2E}
+#decisionResult[data-state="alternatives"] .decision-symbol{background:#DCE8FF;color:#2155BC}
+#decisionResult[data-state="alternatives"] .verdict{background:#DCE8FF;color:#2155BC}
+#decisionResult[data-state="clarify"] .decision-symbol{background:#FFF1CB;color:#8F651A}
+#decisionResult[data-state="clarify"] .verdict{background:#FFF1CB;color:#8F651A}
+#decisionResult .scorebox-head{margin-bottom:16px}
+#decisionResult .completion-row{margin-top:20px}
+#decisionResult .verdict{font-size:16px;line-height:1.3;padding:15px 16px}
+#decisionResult .reason{font-size:13px;color:#4E5460;line-height:1.6;margin-top:16px}
+.decision-route{margin-top:20px;border-top:1px solid #E4E6ED;padding-top:17px}
+.decision-route span{display:block;font:10px var(--mono);color:#6F7787;margin-bottom:8px}
+.decision-route strong{font-size:14px;line-height:1.45;color:#181B25}
+.setup-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.setup-grid .card h3{font-size:19px}
+.setup-grid .card p{font-size:13px}
+.light-code{background:#F2F4F7;border:1px solid #DEE2EB;border-radius:11px;padding:13px;font:12px/1.5 var(--mono);color:#171923;margin-top:14px;overflow:auto}
+.setup-troubleshoot{margin-top:16px}
+#setup details{background:#fff}
+#setup details summary{font-size:14px}
+/* Compact mobile hero: retain narrative, reduce nonessential panel height */
+@media(max-width:900px){
+ .term-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .research-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:670px){
+ .form-demo-grid,.setup-grid{grid-template-columns:1fr}
+ .form-lab-heading{display:block}
+ .lab-safe{display:inline-block;margin-top:8px}
+ .demo-column{min-width:0}
+ .form-demo-grid .demo-column:first-child{order:2}
+ .form-demo-grid .demo-column-active{order:1}
+ .static-form,.step-demo{min-height:0}
+ .step-demo{padding:18px}
+ .research-steps{grid-template-columns:1fr 1fr}
+ .form-lab{padding:16px;border-radius:19px}
+ .hero{padding-top:34px!important;padding-bottom:34px!important;gap:12px!important}
+ .hero .lead{font-size:17px;line-height:1.35}
+ .hero-support{font-size:13px;line-height:1.45}
+ .hero h1{font-size:clamp(41px,10.9vw,57px)!important;margin-bottom:15px!important}
+ .hero-actions{margin-top:18px!important;gap:8px}
+ .hero-actions a{min-height:44px!important;padding:11px 15px}
+ .hero-overline{margin-bottom:12px!important}
+ .hero-meta{display:none!important}
+ .hero-lab{padding:13px!important;margin-top:9px}
+ .lab-headline{font-size:23px!important;margin:12px 0!important}
+ .lab-flow-row{padding:8px!important}
+ .lab-flow{padding:9px!important}
+ .lab-connector{height:9px!important}
+ .lab-bottom{margin-top:12px!important}
+ .lab-flow-label{margin-bottom:10px!important}
+ .scorebox{padding:20px}
+}
+@media(max-width:360px){
+ .term-strip{grid-template-columns:1fr}
+ .research-steps{grid-template-columns:1fr}
+ .demo-minihead{flex-wrap:wrap}
+}
+
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#tldr">К основному содержанию</a>
+  <div class="progress"><i id="progressBar"></i></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#top" aria-label="Tool Decision Guide — наверх">
+        <span class="brand-mark">tdg<span class="brand-dot">.</span></span>
+        <span>TOOL DECISION GUIDE <span class="brand-edition">/ 01</span></span>
+      </a>
+      <div class="header-actions">
+        <button id="tocButton" class="header-link" aria-expanded="false" aria-controls="tocList">
+          <span class="menu-symbol">☷</span> Разделы
+        </button>
+        <div class="reading-toggle" aria-label="Режим чтения">
+          <button id="quickBtn">Кратко</button>
+          <button id="deepBtn" class="active">Подробно</button>
+        </div>
+        <a class="header-cta" href="#decision">Нужен ли мне REA? <span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+    <nav class="toc-popover" id="tocList" aria-label="Навигация по материалу" hidden>
+      <a href="#tldr">01. Суть за 30 секунд</a>
+      <a href="#problem">02. Почему это важно</a>
+      <a href="#architecture">03. Как устроен REA</a>
+      <a href="#cases">04. Примеры из видео</a>
+      <a href="#where">05. Когда полезен</a>
+      <a href="#notneeded">06. Когда не нужен</a>
+      <a href="#matcher">07. Выбрать подход</a>
+      <a href="#workflow">08. Порядок работы</a>
+      <a href="#decision">09. Decision Check</a>
+      <a href="#prompts">10. Готовые промпты</a>
+      <a href="#sources">11. Источники</a>
+      <a href="#verdict-final">12. Вердикт</a>
+    </nav>
+  </header>
+  <nav class="side-index" aria-label="Быстрый переход по ключевым разделам">
+    <span class="side-label">В ЭТОМ ГАЙДЕ</span>
+    <a href="#top">Обзор</a>
+    <a href="#architecture">Как работает</a>
+    <a href="#cases">Кейсы</a>
+    <a href="#matcher">Выбор подхода</a>
+    <a href="#decision">Decision Check</a>
+    <a href="#prompts">Промпты</a>
+    <span class="side-footer">REA · 2026<br>Практический гид</span>
+  </nav>
+
+  <main>
+    <div class="wrap hero-wrap">
+      <section class="hero" id="top">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-copy">
+          <div class="hero-overline">
+            <span class="hero-signal"><i></i> TOOL RESEARCH / № 001 · v1.4</span>
+            <span class="hero-overline-right">12 MIN DEEP DIVE · REA</span>
+          </div>
+          <div class="eyebrow hero-eyebrow">Reverse Engineer Anything</div>
+          <h1>Не копировать.<br><em>Разобраться.</em></h1>
+          <p class="lead">
+            Что, если AI мог бы не угадывать устройство чужого приложения, а <strong>исследовать его поведение</strong>, показывать доказательства и помогать создавать собственную реализацию?
+          </p>
+          <p class="hero-support">REA подключает Codex и Claude Code к инструментам reverse engineering. Показываем, как это работает, где полезно и когда лучше обойтись без него.</p>
+          <div class="hero-actions">
+            <a class="primary-btn" href="#tldr">Разобраться в инструменте <span>↘</span></a>
+            <a class="secondary-btn" href="#decision">Проверить, нужен ли мне REA <span>→</span></a>
+          </div>
+          <div class="hero-meta">
+            <span><i></i> АВТОНОМНЫЙ HTML</span>
+            <span><i></i> ПРАКТИЧЕСКИЙ РАЗБОР</span>
+            <span><i></i> ИНТЕРАКТИВНЫЙ DECISION CHECK</span>
+          </div>
+        </div>
+        <aside class="hero-lab" aria-label="Иллюстрация процесса исследования">
+          <div class="lab-topline"><span><i class="pulse"></i> RESEARCH SESSION</span><span>REA / LIVE MODEL</span></div>
+          <div class="lab-headline">От предположения<br>к доказательству<span>.</span></div>
+          <div class="lab-flow">
+            <div class="lab-flow-label">INVESTIGATION PIPELINE</div>
+            <div class="lab-flow-row">
+              <div class="lab-icon">01</div>
+              <div><b>AI agent</b><small>Формулирует вопросы</small></div>
+              <span class="flow-state">READY</span>
+            </div>
+            <div class="lab-connector"></div>
+            <div class="lab-flow-row highlighted">
+              <div class="lab-icon">02</div>
+              <div><b>REA / MCP</b><small>Исследует приложение</small></div>
+              <span class="flow-state active-state">ANALYZING</span>
+            </div>
+            <div class="lab-connector"></div>
+            <div class="lab-flow-row">
+              <div class="lab-icon">03</div>
+              <div><b>Evidence report</b><small>Факты · выводы · unknowns</small></div>
+              <span class="flow-state">OUTPUT</span>
+            </div>
+          </div>
+          <div class="lab-bottom">
+            <span>OBSERVED ≠ INFERRED</span>
+            <span>NO MAGIC BUTTON</span>
+          </div>
+        </aside>
+      </section>
+    </div>
+
+    <section class="section compact" id="tldr">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">01 / TL;DR</div>
+          <h2>Понять суть за 30 секунд</h2>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="label">Что это</div>
+            <div class="big">Инструментальный слой для AI-агента</div>
+            <p class="muted">REA даёт агенту доступ к средствам анализа сайтов, приложений и бинарников.</p>
+          </div>
+          <div class="card">
+            <div class="label">Зачем</div>
+            <div class="big">Чтобы исследовать, а не додумывать</div>
+            <p class="muted">Вместо «сделай как X» агент получает наблюдения, псевдокод, связи и ограничения.</p>
+          </div>
+          <div class="card">
+            <div class="label">Когда нужен</div>
+            <div class="big">Когда поведение важнее внешнего вида</div>
+            <p class="muted">Закрытый SaaS, desktop-приложение, сложная механика, legacy-система без исходников.</p>
+          </div>
+        </div>
+        <div style="height:14px"></div>
+        <div class="callout">
+          Не «волшебная кнопка клонирования», а исследовательский контур:
+          <strong>наблюдение → доказательства → вывод → собственная реализация.</strong>
+          <small><span class="source-badge official">Official</span> Официальный REA описывает себя как MCP для исследования приложений и бинарников без исходного кода, с локальным анализом, evidence и limitations.</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="problem">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">02 / ПРОБЛЕМА</div>
+          <h2>Обычный AI часто начинает с догадок</h2>
+        </div>
+        <div class="grid-2">
+          <div class="card bad">
+            <div class="label">Обычный запрос</div>
+            <h3>«Сделай форму как Typeform»</h3>
+            <ul class="checklist">
+              <li>AI знает общие паттерны</li>
+              <li>часть поведения предполагает</li>
+              <li>edge cases легко теряются</li>
+              <li>проверка часто происходит после реализации</li>
+            </ul>
+          </div>
+          <div class="card good">
+            <div class="label">Evidence-first</div>
+            <h3>«Сначала исследуй механику»</h3>
+            <ul class="checklist">
+              <li>фиксируются наблюдаемые состояния</li>
+              <li>выводы отделяются от предположений</li>
+              <li>неизвестное остаётся неизвестным</li>
+              <li>код пишется после исследования</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="pipeline">
+          <div class="pipe-step"><span>01</span><b>Выбрать конкретную механику</b></div>
+          <div class="pipe-step"><span>02</span><b>Исследовать реальное поведение</b></div>
+          <div class="pipe-step"><span>03</span><b>Собрать evidence и unknowns</b></div>
+          <div class="pipe-step"><span>04</span><b>Сформировать техническую модель</b></div>
+          <div class="pipe-step"><span>05</span><b>Создать собственную реализацию</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="what">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">03 / ЧТО ЭТО</div>
+          <h2>REA не заменяет Codex. Он расширяет его органы чувств.</h2>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="label">Agent</div>
+            <h3>Думает и принимает решения</h3>
+            <p>Codex или Claude Code формулирует гипотезы, выбирает следующий шаг, интерпретирует результаты и пишет новую реализацию.</p>
+          </div>
+          <div class="card">
+            <div class="label">REA</div>
+            <h3>Оркестрирует исследование</h3>
+            <p>Даёт агенту единый путь к инструментам анализа и возвращает результаты вместе с evidence и ограничениями.</p>
+          </div>
+          <div class="card">
+            <div class="label">Providers</div>
+            <h3>Добывают технические факты</h3>
+            <p>Для нативного анализа используются специализированные средства вроде Ghidra, Hopper или IDA; для web/JS есть другие режимы.</p>
+          </div>
+        </div>
+        <p class="source-note"><span class="source-badge official">Official</span> По текущему README REA подключает агента к анализу native binaries, JavaScript/Electron, .NET и websites; анализ выполняется локально.</p>
+      </div>
+    </section>
+
+    <section class="section" id="architecture">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">04 / АРХИТЕКТУРА</div>
+          <h2>Как проходит запрос от человека до результата</h2>
+        </div>
+
+        <div class="architecture-intro">
+          <div class="arch-editorial">
+            <span class="micro-tag">INSIDE THE TOOL</span>
+            <p>REA находится <strong>между AI-агентом и инструментами исследования</strong>. Нажмите на любой узел схемы, чтобы увидеть его роль.</p>
+          </div>
+          <div class="arch-stamp">01 / 04</div>
+        </div>
+        <div class="arch" aria-label="Интерактивная архитектурная схема">
+          <button class="arch-node active" data-key="human">
+            <span class="mini">Шаг 1</span><b>Человек</b><small>Формулирует исследовательскую задачу</small>
+          </button>
+          <div class="arch-arrow">→</div>
+          <button class="arch-node" data-key="agent">
+            <span class="mini">Шаг 2</span><b>Codex / Claude Code</b><small>Планирует исследование</small>
+          </button>
+          <div class="arch-arrow">→</div>
+          <button class="arch-node" data-key="rea">
+            <span class="mini">Шаг 3</span><b>MCP → REA</b><small>Подключает нужные инструменты</small>
+          </button>
+          <div class="arch-arrow">→</div>
+          <button class="arch-node" data-key="evidence">
+            <span class="mini">Шаг 4+</span><b>Evidence → код</b><small>Выводы, проверка, реализация</small>
+          </button>
+        </div>
+
+        <div class="arch-detail" id="archDetail" aria-live="polite">
+          <span class="detail-prefix">СЕЙЧАС ВЫБРАНО / 01</span>
+          <strong>Человек задаёт границы исследования</strong>
+          <p>Лучший запрос не «разбери всё приложение», а «исследуй конкретную механику, перечисли observed / inferred / unknown и пока ничего не реализуй».</p>
+        </div>
+        <div class="provider-line" aria-label="Внешние инструменты анализа">
+          <span>ENGINE / PROVIDERS</span><b>Browser</b><b>JavaScript / Electron</b><b>Ghidra</b><b>Hopper / IDA</b>
+        </div>
+
+        <div class="term-strip">
+          <div><b>MCP</b><span>«Переходник», через который AI вызывает внешние инструменты.</span></div>
+          <div><b>Ghidra</b><span>Программа для анализа исполняемых файлов, не источник оригинального кода.</span></div>
+          <div><b>Декомпиляция</b><span>Преобразование машинных инструкций в приближённый понятный код.</span></div>
+          <div><b>Evidence</b><span>Проверяемые факты: наблюдения, трассировки, псевдокод, связи.</span></div>
+        </div>
+        <div class="deep" style="margin-top:16px">
+          <details>
+            <summary>Что здесь делает MCP?</summary>
+            <div class="detail-body">
+              <p>MCP — стандартный способ подключать AI-приложения к внешним инструментам, ресурсам и данным. В этой схеме он служит мостом: coding agent получает возможность вызывать REA как внешний инструмент, а REA уже управляет специализированными средствами исследования.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Почему не дать агенту просто Ghidra?</summary>
+            <div class="detail-body">
+              <p>Можно, но тогда вам придётся самостоятельно продумывать интеграцию и рабочий процесс. Ценность REA именно в унификации: одна точка входа, workflow для агента, доказательства и явные ограничения выводов.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="myth">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">05 / БЕЗ МАГИИ</div>
+          <h2>Что REA делает и чего от него не надо ждать</h2>
+        </div>
+
+        <div class="do-dont">
+          <div class="card good">
+            <div class="label">REA делает</div>
+            <ul class="checklist">
+              <li>помогает исследовать поведение приложения</li>
+              <li>даёт агенту доступ к инструментам анализа</li>
+              <li>собирает технические наблюдения и связи</li>
+              <li>возвращает evidence и limitations</li>
+              <li>помогает построить совместимую собственную реализацию</li>
+            </ul>
+          </div>
+          <div class="card bad">
+            <div class="label">REA не делает</div>
+            <ul class="checklist">
+              <li>не восстанавливает гарантированно исходный код</li>
+              <li>не превращает закрытый продукт в open-source</li>
+              <li>не гарантирует правильность каждой гипотезы AI</li>
+              <li>не отменяет тестирование результата</li>
+              <li>не делает любой сценарий использования правомерным</li>
+            </ul>
+          </div>
+        </div>
+        <p class="source-note"><span class="source-badge official">Official</span> README отдельно указывает: декомпилятор не может гарантировать восстановление оригинального исходника; агент работает с псевдокодом, assembly, symbols, strings, metadata и relationships.</p>
+      </div>
+    </section>
+
+    <section class="section" id="cases">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">06 / КЕЙСЫ</div>
+          <h2>Увидеть механику, а не только прочитать о ней</h2>
+        </div>
+        <div class="grid-2 case-pair">
+          <article class="card">
+            <div class="case-counter">01 <span>WEB INTERFACE</span></div>
+            <div class="label"><span class="source-badge video">Video demo</span> Кейс 01</div>
+            <h3>Форма с механикой Typeform</h3>
+            <p>В ролике агент исследует переключение вопросов, клавиатурное управление, ветвление и валидацию публичной формы. Затем автор собирает похожую механику в дизайне своего сайта и показывает доставку заявки в Telegram.</p>
+            <p><strong>Идея:</strong> перенести пользовательский принцип, а не чужой закрытый код.</p>
+          </article>
+          <article class="card">
+            <div class="case-counter">02 <span>DESKTOP LOGIC</span></div>
+            <div class="label"><span class="source-badge video">Video demo</span> Кейс 02</div>
+            <h3>Табличная механика по LibreOffice</h3>
+            <p>В видео REA используют с инструментами анализа, чтобы изучить поведение формул, ошибок и форматов чисел, а затем показать собственную таблицу.</p>
+            <p class="muted">Это демонстрация автора ролика, а не независимая проверка полной совместимости с LibreOffice или Excel.</p>
+          </article>
+        </div>
+        <div class="form-lab" id="formLab">
+          <div class="form-lab-heading">
+            <div>
+              <span class="micro-tag">ИНТЕРАКТИВНАЯ УЧЕБНАЯ МОДЕЛЬ</span>
+              <h3>Одна задача, два UX-подхода</h3>
+              <p>Попробуйте перейти по шагам, оставить поле пустым и нажать Enter. Эта локальная демонстрация иллюстрирует принцип исследования состояния и валидации. <strong>Она не подключена к REA или Typeform, ничего не отправляет и не воспроизводит их код.</strong></p>
+            </div>
+            <span class="lab-safe">LOCAL DEMO · NO SUBMIT</span>
+          </div>
+          <div class="form-demo-grid">
+            <div class="demo-column">
+              <div class="demo-minihead"><span>01 / Обычная форма</span><b>ВСЁ СРАЗУ</b></div>
+              <form class="static-form" id="classicDemo" autocomplete="off">
+                <label for="classicName">Как вас зовут?</label>
+                <input id="classicName" type="text" placeholder="Например, Алексей" />
+                <label for="classicGoal">Что хотите получить?</label>
+                <select id="classicGoal"><option>Консультация</option><option>Разработка сайта</option><option>Другое</option></select>
+                <label for="classicEmail">Ваш email</label>
+                <input id="classicEmail" type="email" placeholder="name@example.com" />
+                <button type="button" id="classicShow" class="demo-action">Проверить поля ↗</button>
+                <p id="classicFeedback" class="demo-feedback" aria-live="polite">Все поля видны одновременно.</p>
+              </form>
+            </div>
+            <div class="demo-column demo-column-active">
+              <div class="demo-minihead"><span>02 / Пошаговая форма</span><b>СОСТОЯНИЯ + ПЕРЕХОДЫ</b></div>
+              <div class="step-demo" aria-label="Учебная демонстрация пошаговой формы">
+                <div class="step-progress"><span id="stepNumber">Шаг 1 из 3</span><div class="step-track"><i id="stepBar"></i></div></div>
+                <div id="stepContent" aria-live="polite"></div>
+                <p id="stepError" class="step-error" role="alert" aria-live="polite"></p>
+                <div class="step-controls">
+                  <button type="button" class="demo-back" id="demoBack">← Назад</button>
+                  <button type="button" class="demo-action" id="demoNext">Далее →</button>
+                </div>
+                <div class="step-keyboard">Enter → следующий вопрос · ← назад кнопкой · данные остаются только здесь</div>
+              </div>
+            </div>
+          </div>
+          <div class="research-steps" aria-label="Логика исследования и реализации">
+            <span><b>1</b> Наблюдать поведение</span>
+            <span><b>2</b> Зафиксировать состояния и ошибки</span>
+            <span><b>3</b> Сформулировать собственное ТЗ</span>
+            <span><b>4</b> Реализовать и сравнить</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="where">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">07 / ГДЕ ПОЛЕЗЕН</div>
+          <h2>Лучшие сценарии применения</h2>
+        </div>
+
+        <div class="usecases">
+          <article class="usecase">
+            <div class="icon">UX</div>
+            <h3>Сложная web-механика</h3>
+            <p>Квизы, формы, keyboard UX, состояния, transitions, validation, фильтры и другие сценарии, которые плохо передаются одним скриншотом.</p>
+            <div class="foot">Высокая ценность</div>
+          </article>
+          <article class="usecase">
+            <div class="icon">MVP</div>
+            <h3>Продуктовый MVP</h3>
+            <p>Исследовать одну доказанную механику существующего продукта и реализовать её минимальную версию под свой сценарий.</p>
+            <div class="foot">Высокая ценность</div>
+          </article>
+          <article class="usecase">
+            <div class="icon">BIN</div>
+            <h3>Приложение без исходников</h3>
+            <p>Когда нужно понять внутренние связи нативной программы, а обычного браузера, документации или исходного репозитория нет.</p>
+            <div class="foot">Профильный сценарий</div>
+          </article>
+          <article class="usecase">
+            <div class="icon">EDU</div>
+            <h3>Обучение</h3>
+            <p>Разбирать реальные системы по слоям и видеть разницу между наблюдением, интерпретацией и предположением.</p>
+            <div class="foot">Полезно для роста</div>
+          </article>
+          <article class="usecase">
+            <div class="icon">LEG</div>
+            <h3>Legacy software</h3>
+            <p>Исследование поведения старых приложений, интеграций и внутренних форматов, когда исходный проект утрачен или недоступен.</p>
+            <div class="foot">Сильный сценарий</div>
+          </article>
+          <article class="usecase">
+            <div class="icon">AI</div>
+            <h3>Evidence-first vibe coding</h3>
+            <p>Перевести работу с AI из режима «похоже, должно быть так» в режим «сначала добудь факты, потом пиши код».</p>
+            <div class="foot">Методологическая ценность</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="notneeded">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">08 / КОГДА НЕ НУЖЕН</div>
+          <h2>Не надо применять REA там, где проблема проще</h2>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="label">Есть исходный код</div>
+            <h3>Дайте репозиторий coding agent</h3>
+            <p class="muted">Если Codex может читать проект напрямую, reverse engineering добавит лишний слой без пользы.</p>
+          </div>
+          <div class="card">
+            <div class="label">Нужен только внешний вид</div>
+            <h3>Скриншот + Figma + agent</h3>
+            <p class="muted">Для простой визуальной реконструкции исследовать внутренности продукта обычно избыточно.</p>
+          </div>
+          <div class="card">
+            <div class="label">Есть хорошая документация</div>
+            <h3>Начните с API и docs</h3>
+            <p class="muted">Документированный интерфейс почти всегда дешевле и надёжнее reverse engineering.</p>
+          </div>
+          <div class="card">
+            <div class="label">Задача тривиальна</div>
+            <h3>Просто напишите функцию</h3>
+            <p class="muted">Не нужен археологический раскоп ради кнопки, модалки или обычной формы.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section deep" id="compare">
+      <div class="wrap">
+        <div class="section-head"><div class="section-num">09 / СРАВНЕНИЕ</div><h2>Выбирайте подход по тому, чего именно не знаете</h2></div>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead><tr><th>Задача</th><th>Начните с</th><th>Когда добавлять REA</th></tr></thead>
+            <tbody>
+              <tr><td>Повторить внешний вид</td><td><strong>Скриншоты + Figma + агент</strong><br>Важны сетка, отступы, компоненты.</td><td>Обычно не нужен: видимое можно описать без reverse engineering.</td></tr>
+              <tr><td>Понять работу формы, квиза, фильтра</td><td><strong>Ручное тестирование + DevTools</strong><br>Запишите состояния, переходы, ошибки.</td><td>Если существенные детали всё ещё скрыты, а анализ разрешён.</td></tr>
+              <tr><td>Подключиться к публичному API</td><td><strong>Документация + тестовый запрос</strong><br>Это первичный источник контрактов.</td><td>Только если критичное поведение не описано и требуется исследование.</td></tr>
+              <tr><td>Разобрать приложение без исходников</td><td><strong>REA + coding agent</strong><br>Гипотезы строятся на evidence.</td><td>Здесь REA и есть профильный вариант.</td></tr>
+              <tr><td>Исследовать native binary</td><td><strong>REA + Ghidra / Hopper / IDA</strong><br>Нужен совместимый provider.</td><td>Когда разрешено исследовать бинарник и нужен уровень глубже UI.</td></tr>
+              <tr><td>Быстро сделать обычный UI</td><td><strong>Codex / Claude Code</strong><br>Опишите требования и проверьте результат.</td><td>Не добавляйте слой исследования без конкретной причины.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="source-note"><span class="source-badge analysis">Decision model</span> Это правила выбора рабочего процесса, а не лабораторный рейтинг скорости или качества инструментов.</p>
+      </div>
+    </section>
+
+    <section class="section" id="matcher">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">10 / ВЫБОР ПОДХОДА</div>
+          <h2>Сначала выберите, что именно вы хотите узнать</h2>
+        </div>
+
+        <div class="matcher">
+          <div class="option-list" id="matcherOptions">
+            <button class="option active" data-match="design">Повторить визуальный дизайн</button>
+            <button class="option" data-match="ux">Понять UX и состояния</button>
+            <button class="option" data-match="api">Понять интеграцию или API</button>
+            <button class="option" data-match="logic">Исследовать скрытую продуктовую логику</button>
+            <button class="option" data-match="binary">Исследовать desktop / binary</button>
+            <button class="option" data-match="clone">Сделать свой аналог одной сложной функции</button>
+          </div>
+          <div class="matcher-result">
+            <div class="mini">Рекомендуемый путь</div>
+            <h3 id="matchTitle">Screenshot → Figma → Codex</h3>
+            <p id="matchText">Если задача в основном визуальная, REA почти наверняка избыточен. Дайте агенту хорошие референсы, размеры, состояния и дизайн-критерии.</p>
+            <div class="stackline" id="matchStack">Reference → UI spec → Coding agent → Browser QA</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="workflow">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">11 / WORKFLOW</div>
+          <h2>Правильный процесс работы с REA</h2>
+        </div>
+
+        <div class="workflow">
+          <div class="wf"><div class="wf-num">01</div><div><strong>Сузить объект исследования</strong><p>Не «разбери Notion», а «разбери поведение database filters при нескольких условиях».</p></div></div>
+          <div class="wf"><div class="wf-num">02</div><div><strong>Сформулировать вопросы</strong><p>Что именно нужно узнать: состояния, ошибки, branching, keyboard UX, формат данных, сетевые вызовы, внутренние связи.</p></div></div>
+          <div class="wf"><div class="wf-num">03</div><div><strong>Сначала получить research report</strong><p>Попросить агента ничего не реализовывать, пока не отделены OBSERVED / INFERRED / UNKNOWN.</p></div></div>
+          <div class="wf"><div class="wf-num">04</div><div><strong>Проверить доказательства</strong><p>Сопоставить выводы с тем, что реально наблюдалось или было найдено инструментами анализа.</p></div></div>
+          <div class="wf"><div class="wf-num">05</div><div><strong>Сформировать собственное ТЗ</strong><p>Не копировать продукт целиком. Выбрать нужное поведение и адаптировать под свой стек, дизайн и бизнес-задачу.</p></div></div>
+          <div class="wf"><div class="wf-num">06</div><div><strong>Реализовать coding agent</strong><p>После исследования Codex / Claude Code пишет код уже по полученной модели.</p></div></div>
+          <div class="wf"><div class="wf-num">07</div><div><strong>Сравнить и протестировать</strong><p>Проверить happy path, ошибки, edge cases и несовпадения. Unknowns не маскировать догадками.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="decision">
+      <div class="wrap">
+        <div class="section-head"><div class="section-num">12 / DECISION CHECK</div><h2>Нужен ли REA именно в вашей задаче?</h2></div>
+        <div class="decision-caption"><span class="micro-tag">6 ВОПРОСОВ · ЛОГИЧЕСКИЙ ВЫВОД</span><span>Без процентов и иллюзии точности. Рекомендация зависит от ваших условий.</span></div>
+        <div class="decision">
+          <div class="questions" id="questions">
+            <div class="q" data-q="source"><strong>У вас есть исходный код исследуемого продукта или нужного компонента?</strong><div class="yesno"><button type="button" data-v="yes">Да</button><button type="button" data-v="no">Нет</button></div></div>
+            <div class="q" data-q="visual"><strong>Вам нужен только внешний вид, без изучения поведения?</strong><div class="yesno"><button type="button" data-v="yes">Да</button><button type="button" data-v="no">Нет</button></div></div>
+            <div class="q" data-q="docs"><strong>Есть полная документация/API для интересующей функции?</strong><div class="yesno"><button type="button" data-v="yes">Да</button><button type="button" data-v="no">Нет</button></div></div>
+            <div class="q" data-q="behavior"><strong>Нужно исследовать реальное поведение или внутреннюю логику?</strong><div class="yesno"><button type="button" data-v="yes">Да</button><button type="button" data-v="no">Нет</button></div></div>
+            <div class="q" data-q="closed"><strong>Целевая программа или компонент закрыты, без доступных исходников?</strong><div class="yesno"><button type="button" data-v="yes">Да</button><button type="button" data-v="no">Нет</button></div></div>
+            <div class="q" data-q="agent"><strong>У вас есть работающий агент с MCP, например Codex / Claude Code?</strong><div class="yesno"><button type="button" data-v="yes">Да</button><button type="button" data-v="no">Нет</button></div></div>
+          </div>
+          <aside class="scorebox" id="decisionResult" aria-live="polite">
+            <div class="scorebox-head"><span class="label">ВАШ РЕЗУЛЬТАТ</span><span class="live-indicator"><i></i> DECISION ENGINE</span></div>
+            <div class="decision-symbol" id="decisionSymbol" aria-hidden="true">?</div>
+            <div class="completion-row"><span>Ответов</span><b><span id="answeredCount">0</span> / 6</b></div>
+            <div class="meter"><i id="scoreMeter"></i></div>
+            <div class="verdict" id="verdict">Ответьте на вопросы</div>
+            <p class="reason" id="reason">После шести ответов получите рекомендацию и объяснение, почему выбран именно этот путь.</p>
+            <div class="decision-route" id="decisionRoute"><span>НАЧНИТЕ С</span><strong>Выбора условий задачи</strong></div>
+            <button type="button" class="reset-btn" id="resetDecision">Сбросить ответы ↺</button>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section deep" id="rating">
+      <div class="wrap">
+        <div class="section-head"><div class="section-num">13 / ПРОФИЛЬ</div><h2>Сильный в сложном. Избыточный в простом.</h2></div>
+        <div class="rating-grid qualitative-grid">
+          <div class="rating"><span class="rating-chip strong">Сильная сторона</span><h3>Evidence-first разработка</h3><p>Требовать доказательства, отмечать неизвестное и строить реализацию по результатам исследования.</p></div>
+          <div class="rating"><span class="rating-chip strong">Сильная сторона</span><h3>Закрытое ПО и сложная логика</h3><p>Инструмент помогает исследовать то, что нельзя прочитать как обычный репозиторий.</p></div>
+          <div class="rating"><span class="rating-chip situational">Зависит от задачи</span><h3>Продуктовый MVP</h3><p>Ценность появляется, если исследуется конкретная критичная механика, а не «всё приложение».</p></div>
+          <div class="rating"><span class="rating-chip situational">Есть подготовка</span><h3>Порог входа</h3><p>Нужны совместимый Node.js, MCP-клиент и иногда отдельный анализатор бинарников.</p></div>
+          <div class="rating"><span class="rating-chip low">Обычно не нужен</span><h3>Простые сайты и UI</h3><p>Обычный coding agent и визуальный референс чаще быстрее и понятнее.</p></div>
+          <div class="rating"><span class="rating-chip situational">Специализированный</span><h3>Повседневное применение</h3><p>Это инструмент для конкретного класса неизвестностей, не новая основная IDE.</p></div>
+        </div>
+        <p class="source-note"><span class="source-badge analysis">Editorial judgment</span> Качественная классификация для учеников и партнёров. Не измерение производительности и не оценка разработчиков REA.</p>
+      </div>
+    </section>
+
+    <section class="section deep" id="risks">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">14 / РИСКИ</div>
+          <h2>Границы, которые важно видеть заранее</h2>
+        </div>
+
+        <details open>
+          <summary>Декомпиляция не равна восстановлению исходника</summary>
+          <div class="detail-body">
+            <p>Псевдокод и найденные связи помогают понять поведение, но это не оригинальный проект автора со всеми именами, комментариями, архитектурными решениями и контекстом.</p>
+          </div>
+        </details>
+        <details>
+          <summary>AI всё ещё может ошибочно интерпретировать evidence</summary>
+          <div class="detail-body">
+            <p>Правильный процесс требует различать наблюдаемое, вывод и неизвестное. Если агент превращает гипотезу в «факт», вы теряете главное преимущество подхода.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Локальный анализ не отменяет политику вашего AI-провайдера</summary>
+          <div class="detail-body">
+            <p>REA указывает, что собственного hosted analysis service у него нет, но coding agent или модель могут иметь отдельные правила обработки данных. Для чувствительных материалов их нужно проверять отдельно.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Право на reverse engineering зависит от контекста</summary>
+          <div class="detail-body">
+            <p>Лицензии, договоры, технические меры защиты и применимое право могут ограничивать допустимые действия. Для учебных и продуктовых задач безопаснее исследовать разрешённые объекты и строить собственную реализацию, не перенося чужой закрытый код, ключи, ассеты или обходы защиты.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section" id="prompts">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">15 / PROMPTS</div>
+          <h2>Готовые шаблоны постановки задачи</h2>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-head">
+            <strong>01 · Сначала исследование, без реализации</strong>
+            <button class="copy-btn" data-copy="prompt1">Copy</button>
+          </div>
+          <pre id="prompt1">Используя REA, исследуй [конкретную функцию / механику].
+
+Определи:
+1. пользовательские состояния;
+2. переходы между состояниями;
+3. validation и ошибки;
+4. keyboard / pointer behavior;
+5. edge cases;
+6. что подтверждено наблюдением или анализом.
+
+Для каждого вывода поставь метку:
+OBSERVED — непосредственно наблюдалось;
+INFERRED — вывод из evidence;
+UNKNOWN — достоверно не установлено.
+
+Пока ничего не реализуй.
+Сначала подготовь research report и перечисли, какие вопросы остались открытыми.</pre>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-head">
+            <strong>02 · Реализация после исследования</strong>
+            <button class="copy-btn" data-copy="prompt2">Copy</button>
+          </div>
+          <pre id="prompt2">Возьми утверждённый research report по [механике].
+
+Собери собственную реализацию для нашего проекта:
+- без переноса чужого закрытого кода;
+- в нашей архитектуре;
+- в нашем визуальном стиле;
+- только с теми функциями, которые нужны нашей задаче.
+
+Сначала покажи:
+1. архитектуру решения;
+2. список файлов, которые будут изменены;
+3. критерии проверки поведения.
+
+После этого реализуй маленькими этапами и после каждого этапа запускай проверку.</pre>
+        </div>
+        <div class="prompt-card">
+          <div class="prompt-head"><strong>03 · Проверка реализации против evidence</strong><button class="copy-btn" data-copy="prompt3">Copy</button></div>
+          <pre id="prompt3">Проверь реализованную механику [название] по нашему research report.
+
+1. Составь таблицу: требование → тест → фактический результат.
+2. Проверь happy path, пустые значения, ошибки, крайние случаи и keyboard UX.
+3. Сравни наблюдаемое поведение с исходным исследованием.
+4. Для неподтверждённых деталей отметь UNKNOWN, а не придумывай эталон.
+5. Покажи расхождения по приоритету P0/P1/P2.
+6. Ничего не исправляй, пока не покажешь отчёт.
+
+В конце выдай решение: READY / NEEDS FIX / INSUFFICIENT EVIDENCE.</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="section deep" id="setup">
+      <div class="wrap">
+        <div class="section-head"><div class="section-num">16 / МЕСТО В СТЕКЕ</div><h2>Установка без лишней инфраструктуры</h2></div>
+        <div class="callout" style="background:var(--blue-soft);border-color:#CBD8FE">
+          ChatGPT → постановка задачи → <strong>Codex / Claude Code ↔ REA</strong> → evidence → свой код → Git → deploy
+          <small>REA подключается к coding agent через MCP. Для исследования native binaries могут потребоваться отдельно установленный Ghidra, Hopper или IDA.</small>
+        </div>
+        <div class="setup-grid">
+          <div class="card">
+            <div class="label">01 / ПРОВЕРИТЬ</div>
+            <h3>Node.js и npm</h3>
+            <p>В документации указаны поддерживаемые Node.js: 22.x начиная с 22.19, 24.x начиная с 24.11 либо 26+. Нужен npm.</p>
+            <pre class="light-code">node --version
+npm --version</pre>
+          </div>
+          <div class="card">
+            <div class="label">02 / НАСТРОИТЬ</div>
+            <h3>Подключить к агенту</h3>
+            <p>Запустите мастер, выберите агента, проверьте предлагаемые изменения и подтвердите. После настройки перезапустите агента.</p>
+            <pre class="light-code">npx rea-agents setup</pre>
+          </div>
+          <div class="card">
+            <div class="label">03 / ПРОВЕРИТЬ</div>
+            <h3>Сделать диагностику</h3>
+            <p>После настройки запустите проверку готовности, затем дайте агенту маленький разрешённый объект исследования.</p>
+            <pre class="light-code">npx -y rea-agents@latest doctor</pre>
+          </div>
+          <div class="card">
+            <div class="label">04 / НЕ ПЕРЕУСЛОЖНЯТЬ</div>
+            <h3>Бинарный анализатор не всегда нужен</h3>
+            <p>Для JavaScript/Electron и некоторых статических сценариев нативный декомпилятор не требуется. Ставьте Ghidra/Hopper/IDA только под конкретную задачу.</p>
+          </div>
+        </div>
+        <div class="setup-troubleshoot">
+          <details><summary>REA не появляется в агенте</summary><div class="detail-body"><p>Убедитесь, что мастер настроил именно используемый агент; перезапустите его. Проверьте диагностику и конфигурацию MCP по официальной инструкции. Не переустанавливайте всё подряд.</p></div></details>
+          <details><summary>Не поддерживается версия Node.js</summary><div class="detail-body"><p>Проверьте <code>node --version</code>. REA работает не с любым major-релизом. Сверьтесь с таблицей поддерживаемых версий перед повторной установкой.</p></div></details>
+          <details><summary>Нет Ghidra / Hopper / IDA</summary><div class="detail-body"><p>Для глубокой декомпиляции нативного бинарника нужен соответствующий provider. Для веб-страницы или статического JS часто можно обойтись без него. Проверьте тип цели и требования provider.</p></div></details>
+          <details><summary>Исследование вернуло мало evidence</summary><div class="detail-body"><p>Сузьте вопрос и проверьте, доступна ли агенту нужная часть программы. Запросите явно ограничения и unknowns; не приравнивайте отсутствие evidence к доказательству отсутствия функции.</p></div></details>
+        </div>
+        <p class="source-note"><span class="source-badge official">Official</span> Требования и команды сверены с <a href="https://github.com/morluto/rea/blob/main/docs/installation.md" target="_blank" rel="noopener">официальной инструкцией</a> и <a href="https://github.com/morluto/rea" target="_blank" rel="noopener">README REA</a> 17.10.2026. Проверяйте их актуальность перед установкой.</p>
+      </div>
+    </section>
+
+    <section class="section deep" id="sources">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">17 / SOURCES</div>
+          <h2>Что является источником, а что нашей оценкой</h2>
+        </div>
+
+        <div class="source-list">
+          <div class="source">
+            <div class="source-index">01</div>
+            <div><b>REA — официальный GitHub</b><small>Назначение, quick start, supported targets, local analysis, evidence model. Проверено 17.10.2026.</small></div>
+            <a href="https://github.com/morluto/rea" target="_blank" rel="noopener">Открыть</a>
+          </div>
+          <div class="source">
+            <div class="source-index">02</div>
+            <div><b>Model Context Protocol — официальная документация</b><small>MCP как стандарт подключения AI-приложений к tools/resources/prompts. Проверено 17.10.2026.</small></div>
+            <a href="https://modelcontextprotocol.io/introduction" target="_blank" rel="noopener">Открыть</a>
+          </div>
+          <div class="source">
+            <div class="source-index">03</div>
+            <div><b>Разобранный YouTube-ролик</b><small>Практические демонстрации Typeform-like формы и spreadsheet-кейса. Рассматриваются как демонстрации автора ролика.</small></div>
+            <a href="https://youtu.be/CvzHYLEHZ6Y" target="_blank" rel="noopener">Открыть</a>
+          </div>
+          <div class="source">
+            <div class="source-index">04</div>
+            <div><b>Редакционная модель Tool Decision Guide</b><small>Decision Check, workflow и выбор подхода — авторская методология принятия решения, не официальный алгоритм REA.</small></div>
+            <span class="source-badge analysis">Analysis</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" id="verdict-final">
+      <div class="wrap">
+        <div class="final-card">
+          <div>
+            <div class="eyebrow" style="color:#A5B3FF">Финальный verdict</div>
+            <h2>REA стоит держать в наборе. Но доставать по задаче.</h2>
+            <p>
+              Если нужно исследовать реальное поведение закрытого продукта, сложную механику или программу без исходников,
+              REA заметно усиливает coding agent. Для обычной верстки, простого UI или проекта с доступным репозиторием это чаще лишний слой.
+            </p>
+          </div>
+          <div class="verdict-chip">
+            <div class="label" style="color:#aab4af">Первый эксперимент</div>
+            <div class="v">1 механика</div>
+            <small>Выберите одну небольшую функцию чужого продукта → исследуйте → получите report → реализуйте свою версию → сравните результат.</small>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast">Скопировано</div>
+
+  <script>
+    // Reading mode
+    const quickBtn = document.getElementById('quickBtn');
+    const deepBtn = document.getElementById('deepBtn');
+    function setMode(mode){
+      document.body.classList.toggle('quick-mode', mode === 'quick');
+      quickBtn.classList.toggle('active', mode === 'quick');
+      deepBtn.classList.toggle('active', mode === 'deep');
+      try { localStorage.setItem('tdg-reading-mode', mode); } catch(_) {}
+    }
+    quickBtn.addEventListener('click',()=>setMode('quick'));
+    deepBtn.addEventListener('click',()=>setMode('deep'));
+    let preferredMode='deep'; try { preferredMode=localStorage.getItem('tdg-reading-mode')||'deep'; } catch(_) {} setMode(preferredMode);
+
+    // Scroll progress
+    const progressBar = document.getElementById('progressBar');
+    function updateProgress(){
+      const max = document.documentElement.scrollHeight - innerHeight;
+      const pct = max > 0 ? (scrollY / max) * 100 : 0;
+      progressBar.style.width = Math.min(100, Math.max(0,pct)) + '%';
+    }
+    addEventListener('scroll', updateProgress, {passive:true});
+    addEventListener('resize', updateProgress);
+    updateProgress();
+
+    // Architecture explorer
+    const archContent = {
+      human:{
+        title:'Человек задаёт границы исследования',
+        text:'Лучший запрос не «разбери всё приложение», а «исследуй конкретную механику, перечисли observed / inferred / unknown и пока ничего не реализуй».'
+      },
+      agent:{
+        title:'Coding agent управляет циклом исследования',
+        text:'Codex или Claude Code формулирует следующий вопрос, вызывает доступный инструмент, читает результат, уточняет гипотезу и решает, когда evidence уже достаточно.'
+      },
+      rea:{
+        title:'MCP + REA дают агенту инструменты',
+        text:'MCP служит стандартным мостом к внешнему инструменту. REA унифицирует работу с web/JS, приложениями и native-analysis providers и возвращает результаты вместе с ограничениями.'
+      },
+      evidence:{
+        title:'Evidence становится основой собственной реализации',
+        text:'Результат исследования — не «готовый оригинальный исходник», а техническая модель: наблюдения, псевдокод, связи, метаданные, гипотезы и неизвестное. Уже по ней агент строит ваш код.'
+      }
+    };
+    document.querySelectorAll('.arch-node').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.arch-node').forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        const data = archContent[btn.dataset.key];
+        document.getElementById('archDetail').innerHTML = `<strong>${data.title}</strong><p>${data.text}</p>`;
+      });
+    });
+
+    // Task matcher
+    const matcherData = {
+      design:{
+        title:'Screenshot → Figma → Codex',
+        text:'Если задача в основном визуальная, REA почти наверняка избыточен. Дайте агенту хорошие референсы, размеры, состояния и дизайн-критерии.',
+        stack:'Reference → UI spec → Coding agent → Browser QA'
+      },
+      ux:{
+        title:'Browser observation → REA → Agent',
+        text:'Когда важны переходы, validation, keyboard UX и состояния, полезно сначала исследовать фактическое поведение, а потом строить реализацию.',
+        stack:'Target behavior → REA / browser evidence → Report → Implementation'
+      },
+      api:{
+        title:'Documentation → DevTools → REA только при пробеле',
+        text:'Публичная документация и API должны быть первым источником. REA подключается, если критичная часть поведения остаётся недокументированной.',
+        stack:'Docs → API test → DevTools → REA if needed'
+      },
+      logic:{
+        title:'REA → Evidence report → Product spec',
+        text:'Сильный сценарий REA: отделить реально обнаруженную логику от предположений и превратить её в собственную продуктовую спецификацию.',
+        stack:'Question → REA → OBSERVED / INFERRED / UNKNOWN → Spec'
+      },
+      binary:{
+        title:'REA + native analysis provider',
+        text:'Если исходников нет и нужно исследовать нативную программу, REA становится особенно полезен как слой между coding agent и специализированным декомпилятором.',
+        stack:'Agent → REA → Ghidra / Hopper / IDA → Evidence'
+      },
+      clone:{
+        title:'Исследовать функцию → построить свою реализацию',
+        text:'Не копируйте продукт целиком. Сначала выделите одну механику, исследуйте поведение, затем реализуйте только нужную часть под свой стек.',
+        stack:'Feature scope → Research → Spec → Own implementation → Tests'
+      }
+    };
+    document.querySelectorAll('.option').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.option').forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        const d = matcherData[btn.dataset.match];
+        document.getElementById('matchTitle').textContent=d.title;
+        document.getElementById('matchText').textContent=d.text;
+        document.getElementById('matchStack').textContent=d.stack;
+      });
+    });
+
+    // Decision Check v1.4: deterministic rules, no fabricated percentages.
+    const qEls=[...document.querySelectorAll('.q[data-q]')];
+    const answeredCount=document.getElementById('answeredCount');
+    const resultSymbol=document.getElementById('decisionSymbol');
+    const resultVerdict=document.getElementById('verdict');
+    const resultReason=document.getElementById('reason');
+    const resultRoute=document.querySelector('#decisionRoute strong');
+    const completionMeter=document.getElementById('scoreMeter');
+    const decisionResult=document.getElementById('decisionResult');
+    function recalc(){
+      const answers={};
+      qEls.forEach((q,i)=>{
+        q.setAttribute('aria-label',`Вопрос ${i+1}: ${q.querySelector('strong').textContent}`);
+        q.querySelectorAll('button').forEach(b=>{
+          b.setAttribute('aria-pressed',String(b.classList.contains('selected')));
+        });
+        const selected=q.querySelector('button.selected');
+        if(selected) answers[q.dataset.q]=selected.dataset.v==='yes';
+      });
+      const count=Object.keys(answers).length;
+      answeredCount.textContent=String(count);
+      completionMeter.style.width=Math.round(count / qEls.length * 100)+'%';
+      let status='pending',title='Ответьте на вопросы',symbol='?',
+          reason=`Ответьте на оставшиеся ${qEls.length-count} вопрос(а). Тогда покажем условную рекомендацию и её основание.`,
+          route='Выбора условий задачи';
+      if(count===6){
+        const a=answers;
+        if((a.source && a.closed) || (a.visual && a.behavior)){
+          status='clarify'; title='Уточните исходные данные'; symbol='!';
+          reason=a.source && a.closed
+            ? 'Вы указали, что исходники доступны, но одновременно что тот же компонент закрыт. Уточните, какой именно объект исследования имеется в виду.'
+            : '«Только внешний вид» и «исследовать реальное поведение» описывают разные задачи. Выберите основную цель.';
+          route='Уточнить объект и границы задачи';
+        }else if(a.visual){
+          status='no';title='REA не нужен';symbol='×';
+          reason='Для визуального воспроизведения достаточно референсов, Figma и coding agent. Reverse engineering добавит сложность без явной пользы.';
+          route='Скриншоты → Figma / описание → Codex';
+        }else if(a.source){
+          status='no';title='REA не нужен';symbol='×';
+          reason='Исходники доступны. Сначала изучите код и тесты в репозитории: это надёжнее и проще, чем декомпиляция.';
+          route='Репозиторий → coding agent → тесты';
+        }else if(a.docs){
+          status='alternatives'; title='Сначала проверьте альтернативы'; symbol='↗';
+          reason='Для интересующей функции уже есть документация или API. Начните с них и DevTools, затем оцените, остались ли существенные неизвестности.';
+          route='Документация / API → тест → DevTools';
+        }else if(a.closed && a.behavior && a.agent){
+          status='yes';title='REA рекомендуется';symbol='✓';
+          reason='Нужно исследовать поведение закрытого продукта, а исходников и полной документации нет. При работающем MCP-агенте REA соответствует задаче.';
+          route='Одна функция → REA → evidence → своя реализация';
+        }else if(a.closed && a.behavior && !a.agent){
+          status='alternatives';title='Сначала проверьте альтернативы';symbol='↗';
+          reason='Сценарий подходит для REA, но у вас нет настроенного MCP-агента. Сначала оцените ручной анализ и цену подготовки окружения.';
+          route='Определить ценность задачи → настроить coding agent при необходимости';
+        }else if(!a.behavior){
+          status='no'; title='REA не нужен';symbol='×';
+          reason='Вы не планируете исследовать реальное поведение или внутреннюю логику. Для текущей цели reverse engineering избыточен.';
+          route='Обычный coding agent / референсы';
+        }else{
+          status='alternatives';title='Сначала проверьте альтернативы';symbol='↗';
+          reason='Исследовать поведение полезно, но не очевидно, что нужен глубокий REA-анализ. Проверьте браузер, DevTools и доступные материалы, затем уточните недостающее evidence.';
+          route='Browser / DevTools → список unknowns → REA при необходимости';
+        }
+      }
+      decisionResult.dataset.state=status;
+      resultSymbol.textContent=symbol;
+      resultVerdict.textContent=title;
+      resultReason.textContent=reason;
+      resultRoute.textContent=route;
+    }
+    qEls.forEach(q=>{
+      q.querySelectorAll('button').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          q.querySelectorAll('button').forEach(b=>b.classList.remove('selected'));
+          btn.classList.add('selected');
+          recalc();
+        });
+      });
+    });
+    document.getElementById('resetDecision').addEventListener('click',()=>{
+      qEls.forEach(q=>q.querySelectorAll('button.selected').forEach(b=>b.classList.remove('selected')));
+      recalc();
+    });
+    recalc();
+
+    // Independent educational form demo. No network requests, no actual submission.
+    const demoAnswers={name:'',goal:'',email:''};
+    let demoStep=0;
+    const demoFields=[
+      {key:'name',label:'Как вас зовут?',hint:'Минимум 2 символа'},
+      {key:'goal',label:'Какая задача актуальна?',hint:'Выберите направление'},
+      {key:'email',label:'Куда можно написать?',hint:'Введите email для демонстрации проверки формата'}
+    ];
+    const stepContent=document.getElementById('stepContent');
+    const stepError=document.getElementById('stepError');
+    function renderStep(){
+      stepError.textContent='';
+      const done=demoStep>=demoFields.length;
+      document.getElementById('stepNumber').textContent=done?'Готово · без отправки':`Шаг ${demoStep+1} из 3`;
+      document.getElementById('stepBar').style.width=(done?100:Math.round((demoStep+1)/3*100))+'%';
+      document.getElementById('demoNext').textContent=done?'Начать заново ↻':'Далее →';
+      document.getElementById('demoBack').disabled=demoStep===0 || done;
+      if(done){
+        stepContent.innerHTML='<div class="step-done"><span aria-hidden="true">✓</span><h4>Механика пройдена</h4><p>Все три состояния сменились, значения прошли валидацию. <strong>Ничего не отправлено.</strong></p></div>';
+        return;
+      }
+      const f=demoFields[demoStep];
+      let inputHTML='';
+      if(f.key==='goal') inputHTML='<select id="demoField"><option value="">Выберите вариант</option><option value="Консультация">Консультация</option><option value="Разработка сайта">Разработка сайта</option><option value="Другое">Другое</option></select>';
+      else inputHTML=`<input id="demoField" type="${f.key==='email'?'email':'text'}" placeholder="${f.key==='name'?'Например, Алексей':'name@example.com'}" autocomplete="off" />`;
+      stepContent.innerHTML=`<div class="step-question"><span>0${demoStep+1} / ВОПРОС</span><label for="demoField">${f.label}</label><p>${f.hint}</p>${inputHTML}</div>`;
+      const field=document.getElementById('demoField');
+      field.value=demoAnswers[f.key];
+      field.addEventListener('input',()=>{demoAnswers[f.key]=field.value;stepError.textContent='';});
+      field.addEventListener('change',()=>{demoAnswers[f.key]=field.value;stepError.textContent='';});
+      field.addEventListener('keydown',e=>{
+        if(e.key==='Enter') {e.preventDefault();advanceStep();}
+      });
+    }
+    function advanceStep(){
+      if(demoStep>=demoFields.length){
+        demoStep=0;
+        for(const key of Object.keys(demoAnswers))demoAnswers[key]='';
+        renderStep();return;
+      }
+      const f=demoFields[demoStep], value=demoAnswers[f.key].trim();
+      if(f.key==='name' && value.length<2){stepError.textContent='Введите минимум 2 символа.';return;}
+      if(f.key==='goal' && !value){stepError.textContent='Выберите задачу.';return;}
+      if(f.key==='email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)){
+        stepError.textContent='Введите email в формате name@example.com.';return;
+      }
+      demoStep++;
+      renderStep();
+      if(demoStep<3)document.getElementById('demoField')?.focus();
+    }
+    document.getElementById('demoNext').addEventListener('click',advanceStep);
+    document.getElementById('demoBack').addEventListener('click',()=>{
+      if(demoStep>0 && demoStep<3){demoStep--;renderStep();document.getElementById('demoField')?.focus();}
+    });
+    document.getElementById('classicShow').addEventListener('click',()=>{
+      const name=document.getElementById('classicName').value.trim();
+      const email=document.getElementById('classicEmail').value.trim();
+      document.getElementById('classicFeedback').textContent=
+        name.length>=2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+          ? 'Локальная проверка пройдена. Ничего не отправлено.'
+          : 'Проверьте имя (2+ символа) и формат email. Ничего не отправлено.';
+    });
+    document.getElementById('classicDemo').addEventListener('submit',e=>e.preventDefault());
+    renderStep();
+
+    // Copy prompts (works from local HTML files when Clipboard API is restricted)
+    const toast=document.getElementById('toast');
+    function copiedMessage(message) {
+      toast.textContent=message;
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'),1700);
+    }
+    document.querySelectorAll('[data-copy]').forEach(btn=>{
+      btn.addEventListener('click',async()=>{
+        const content=document.getElementById(btn.dataset.copy).innerText;
+        let copied=false;
+        if(navigator.clipboard?.writeText){
+          try{ await navigator.clipboard.writeText(content); copied=true; }catch(_){}
+        }
+        if(!copied){
+          const el=document.createElement('textarea');
+          el.value=content;
+          el.style.cssText='position:fixed;left:-9999px;opacity:0';
+          document.body.appendChild(el);el.focus();el.select();
+          try{copied=document.execCommand('copy')}catch(_){}
+          el.remove();
+        }
+        copiedMessage(copied?'Промпт скопирован':'Не удалось скопировать: выделите текст вручную');
+      });
+    });
+
+    // Table of contents dropdown + active state
+    const tocButton = document.getElementById('tocButton');
+    const tocList = document.getElementById('tocList');
+    const closeToc = () => { tocList.hidden=true; tocButton.setAttribute('aria-expanded','false'); };
+    tocButton.addEventListener('click',()=>{
+      tocList.hidden=!tocList.hidden;
+      tocButton.setAttribute('aria-expanded',String(!tocList.hidden));
+    });
+    tocList.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
+      const section = document.querySelector(a.getAttribute('href'));
+      if(section && section.classList.contains('deep') && document.body.classList.contains('quick-mode')) setMode('deep');
+      closeToc();
+    }));
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closeToc()});
+    document.addEventListener('pointerdown',e=>{
+      if(!tocList.hidden && !tocList.contains(e.target) && !tocButton.contains(e.target))closeToc();
+    });
+    if('IntersectionObserver' in window){
+      const obs=new IntersectionObserver(entries=>{
+        const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+        if(!visible)return;
+        document.querySelectorAll('.side-index a').forEach(a=>a.classList.toggle('current', a.hash==='#'+visible.target.id));
+      },{rootMargin:'-18% 0px -56% 0px',threshold:[0,.25,.5]});
+      document.querySelectorAll('main section[id]').forEach(s=>obs.observe(s));
+    }
+
+    // Make architecture tabs accessible and expose selected state
+    document.querySelectorAll('.arch-node').forEach((node,i)=>{
+      node.setAttribute('aria-pressed',String(node.classList.contains('active')));
+      node.addEventListener('click',()=>{
+        document.querySelectorAll('.arch-node').forEach(n=>n.setAttribute('aria-pressed',String(n===node)));
+        const prefix=document.querySelector('#archDetail .detail-prefix');
+        if(!prefix){
+          document.getElementById('archDetail').insertAdjacentHTML('afterbegin','<span class="detail-prefix"></span>');
+        }
+        document.querySelector('#archDetail .detail-prefix').textContent='СЕЙЧАС ВЫБРАНО / 0'+(i+1);
+      });
+    });
+
+  </script>
+</body>
+</html>
